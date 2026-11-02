@@ -1,7 +1,8 @@
 # ChatViewer
 
-> **Status: pre-alpha.** Milestone M2: chat model, WhatsApp import and
-> the `chatviewer` command line (no GUI yet). See [docs/plan.md](docs/plan.md).
+> **Status: pre-alpha.** Milestone M3: WhatsApp and Signal import, the
+> ChatViewer Archive format and the `chatviewer` command line (no GUI
+> yet). See [docs/plan.md](docs/plan.md).
 
 A cross-platform desktop viewer (Windows, macOS, Linux) for exported chat
 archives. It renders chats like a messenger and exports them to TXT,
@@ -27,11 +28,18 @@ and never stores chats, media or keys beyond the running session.
 ```bash
 cargo run -p cv-cli -- info path/to/WhatsApp-export.zip --anonymous
 cargo run -p cv-cli -- export path/to/WhatsApp-export.zip --format md -o chat.md
+cargo run -p cv-cli -- info path/to/SignalBackups --stats
+cargo run -p cv-cli -- export path/to/SignalBackups --chat c12 --format cva -o chat.zip
 ```
 
-`info` shows the detected source, format variant, warnings and chats.
-`export` writes txt, md (both lossy) or json (lossless). Existing files
-are never overwritten without `--force`.
+- `info` shows the detected source, format variant, warnings and chats.
+  With `--stats` it adds aggregated counts, never content.
+- `export` writes txt or md (both lossy), json (lossless), or cva: a ZIP
+  with all media that ChatViewer can reopen
+  ([format](docs/formats/cva.md)).
+- Signal backups ask for the 64-character recovery key with a hidden
+  prompt, or read it from stdin with `--recovery-key-stdin`.
+- Existing files are never overwritten without `--force`.
 
 ## Contributing
 

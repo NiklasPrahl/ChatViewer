@@ -1,0 +1,27 @@
+[package]
+name = "cv-cva"
+version = "0.0.0"
+description = "ChatViewer Archive (CVA): writer and importer"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+cv-core = { path = "../cv-core" }
+cv-model = { path = "../cv-model" }
+hex = "0.4"
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+zip = { version = "9", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+zip = { version = "9", default-features = false, features = ["deflate"] }
+cv-import-whatsapp = { path = "../cv-import-whatsapp", features = ["synth"] }
+tempfile = "3"
+
+[lints]
+workspace = true

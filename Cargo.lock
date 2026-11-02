@@ -91,6 +91,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "base64"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
 name = "bitflags"
 version = "2.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -265,12 +271,17 @@ dependencies = [
 name = "cv-cli"
 version = "0.0.0"
 dependencies = [
+ "chrono",
  "clap",
  "cv-core",
+ "cv-cva",
  "cv-export",
+ "cv-import-signal",
  "cv-import-whatsapp",
  "cv-model",
  "log",
+ "rand",
+ "rpassword",
  "tempfile",
 ]
 
@@ -281,6 +292,24 @@ dependencies = [
  "cv-model",
  "log",
  "thiserror",
+ "zeroize",
+]
+
+[[package]]
+name = "cv-cva"
+version = "0.0.0"
+dependencies = [
+ "chrono",
+ "cv-core",
+ "cv-import-whatsapp",
+ "cv-model",
+ "hex",
+ "log",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "zip",
 ]
 
 [[package]]
@@ -300,18 +329,24 @@ name = "cv-import-signal"
 version = "0.0.0"
 dependencies = [
  "aes",
+ "base64",
  "cbc",
  "clap",
  "ctr",
+ "cv-core",
+ "cv-cva",
+ "cv-model",
  "flate2",
  "hex",
  "hkdf",
  "hmac",
+ "log",
  "prost",
  "prost-build",
  "protox",
  "rand",
  "rpassword",
+ "serde_json",
  "sha2",
  "subtle",
  "tempfile",

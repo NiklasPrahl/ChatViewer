@@ -22,8 +22,17 @@ required-features = ["cli"]
 name = "synthetic_backup"
 required-features = ["writer"]
 
+[[test]]
+name = "import_to_cva"
+required-features = ["writer"]
+
 [dependencies]
 aes = "0.8"
+base64 = "0.22"
+cv-core = { path = "../cv-core" }
+cv-model = { path = "../cv-model" }
+log = "0.4"
+serde_json = "1"
 cbc = { version = "0.1", features = ["std"] }
 ctr = "0.9"
 flate2 = "1"
@@ -44,6 +53,7 @@ prost-build = "0.14"
 protox = "0.10"
 
 [dev-dependencies]
+cv-cva = { path = "../cv-cva" }
 rand = "0.9"
 tempfile = "3"
 

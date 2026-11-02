@@ -11,15 +11,27 @@ publish.workspace = true
 name = "chatviewer"
 path = "src/main.rs"
 
+[features]
+# Signal support links the AGPL-3.0 importer; release binaries are then
+# AGPL-3.0 as a whole (ADR 0001). Build without it for an MIT-only binary.
+default = ["signal"]
+signal = ["dep:cv-import-signal"]
+
 [dependencies]
+chrono = { version = "0.4", default-features = false, features = ["std"] }
 clap = { version = "4", features = ["derive"] }
 cv-core = { path = "../cv-core" }
+cv-cva = { path = "../cv-cva" }
+cv-import-signal = { path = "../cv-import-signal", optional = true }
+rpassword = "7"
 cv-export = { path = "../cv-export" }
 cv-import-whatsapp = { path = "../cv-import-whatsapp" }
 cv-model = { path = "../cv-model" }
 log = "0.4"
 
 [dev-dependencies]
+cv-import-signal = { path = "../cv-import-signal", features = ["writer"] }
+rand = "0.9"
 cv-import-whatsapp = { path = "../cv-import-whatsapp", features = ["synth"] }
 tempfile = "3"
 
