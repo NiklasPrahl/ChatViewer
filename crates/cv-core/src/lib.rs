@@ -129,7 +129,7 @@ pub struct ChatSummary {
 }
 
 /// An opened archive. Implementations load lazily where they can.
-pub trait ChatArchive {
+pub trait ChatArchive: Send {
     fn report(&self) -> &SourceReport;
     fn conversation_ids(&self) -> Vec<ConversationId>;
     fn load(&self, id: &ConversationId) -> Result<ConversationData>;
@@ -154,6 +154,11 @@ pub trait ChatArchive {
             .iter()
             .map(|id| self.load(id))
             .collect()
+    }
+    /// Several chats, in the given order. Archives that can decode many
+    /// chats in one pass should override it.
+    fn load_many(&self, ids: &[ConversationId]) -> Result<Vec<ConversationData>> {
+        ids.iter().map(|id| self.load(id)).collect()
     }
     /// Opens an attachment's bytes. Never writes to disk (ADR 0003).
     fn open_blob(&self, blob: &BlobRef) -> Result<Box<dyn Read + '_>>;
@@ -186,9 +191,54 @@ pub trait Exporter: Send + Sync {
     ) -> Result<()>;
 }
 
+/// A file name for a chat title that is safe on every platform.
+pub fn safe_file_stem(title: &str) -> String {
+    let cleaned: String = title
+        .chars()
+        .map(|c| match c {
+            c if c.is_control() => '_',
+            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
+            c => c,
+        })
+        .take(80)
+        .collect();
+    let cleaned = cleaned.trim_matches(['.', ' ']);
+    if cleaned.is_empty() {
+        "chat".into()
+    } else {
+        cleaned.to_owned()
+    }
+}
+
+/// `dir/<stem>.<ext>`, or `dir/<stem> (2).<ext>` and so on if taken.
+/// Never returns an existing path.
+pub fn unique_path(dir: &Path, stem: &str, ext: &str) -> PathBuf {
+    let candidate = dir.join(format!("{stem}.{ext}"));
+    if !candidate.exists() {
+        return candidate;
+    }
+    (2..)
+        .map(|n| dir.join(format!("{stem} ({n}).{ext}")))
+        .find(|p| !p.exists())
+        .expect("some free name")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn file_names_are_safe_and_unique() {
+        assert_eq!(safe_file_stem("A/B: c?"), "A_B_ c_");
+        assert_eq!(safe_file_stem(" .. "), "chat");
+        let dir = std::env::temp_dir().join(format!("cv-core-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let first = unique_path(&dir, "Team", "zip");
+        std::fs::write(&first, b"x").unwrap();
+        let second = unique_path(&dir, "Team", "zip");
+        assert!(second.ends_with("Team (2).zip"));
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 
     struct Fixed(&'static str, Probe);
 

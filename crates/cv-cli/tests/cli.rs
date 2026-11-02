@@ -186,3 +186,71 @@ fn signal_backup_to_cva_and_back() {
     assert!(stdout.contains("source:       signal"), "{stdout}");
     assert!(stdout.contains("Synthetic Group"));
 }
+
+#[test]
+fn exports_every_signal_chat_to_its_own_reopenable_zip() {
+    use cv_core::ChatArchive;
+    use cv_import_signal::writer::synth::{self as signal_synth, SynthOptions};
+    use rand::SeedableRng;
+
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("SignalBackups");
+    let options = SynthOptions {
+        messages: 90,
+        media: 6,
+        ..SynthOptions::default()
+    };
+    let b = signal_synth::generate(&options);
+    let key: cv_import_signal::key::RecoveryKey = b.recovery_key.parse().unwrap();
+    let mut rng = rand::rngs::StdRng::seed_from_u64(2);
+    cv_import_signal::writer::write_local_backup(
+        &root, &key, &b.aci, &b.info, b.frames, &b.media, &mut rng,
+    )
+    .unwrap();
+    let out = dir.path().join("exports");
+    std::fs::create_dir(&out).unwrap();
+    let args = [
+        "export",
+        root.to_str().unwrap(),
+        "--recovery-key-stdin",
+        "--all",
+        "--format",
+        "cva",
+        "--out-dir",
+        out.to_str().unwrap(),
+    ];
+    let run = chatviewer_with_stdin(&args, &b.recovery_key);
+    assert!(
+        run.status.success(),
+        "{}",
+        String::from_utf8_lossy(&run.stderr)
+    );
+
+    let mut files: Vec<_> = std::fs::read_dir(&out)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .collect();
+    files.sort();
+    assert_eq!(files.len(), 3, "one ZIP per chat: {files:?}");
+    let mut total = 0;
+    let mut media = 0;
+    for f in &files {
+        // Each archive opens on its own: no key, no backup needed.
+        let cva = cv_cva::CvaArchive::open(f).unwrap();
+        let data = cva.load(&cva.conversation_ids()[0]).unwrap();
+        total += data.messages.len();
+        media += cva.manifest().media.len();
+    }
+    assert_eq!(total, options.messages);
+    assert_eq!(media, options.media);
+
+    // A second run never overwrites: new files get " (2)".
+    let again = chatviewer_with_stdin(&args, &b.recovery_key);
+    assert!(again.status.success());
+    let names: Vec<String> = std::fs::read_dir(&out)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(names.len(), 6);
+    assert_eq!(names.iter().filter(|n| n.ends_with(" (2).zip")).count(), 3);
+}

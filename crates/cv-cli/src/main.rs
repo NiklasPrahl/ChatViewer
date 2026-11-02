@@ -40,7 +40,9 @@ enum Command {
         #[arg(long)]
         stats: bool,
     },
-    /// Export one chat to txt, md, json or cva (ZIP with media).
+    /// Export chats to txt, md, json or cva (ZIP with media). One chat goes
+    /// to `-o`; several (`--all`, repeated `--chat`) go to `--out-dir`, one
+    /// file per chat.
     Export {
         #[command(flatten)]
         input: InputArgs,
@@ -53,9 +55,16 @@ enum Command {
         /// Overwrite an existing output file.
         #[arg(long)]
         force: bool,
-        /// Chat id from `info` (needed when an archive has several chats).
+        /// Chat id from `info`; repeat for several chats.
         #[arg(long)]
-        chat: Option<String>,
+        chat: Vec<String>,
+        /// Export every chat.
+        #[arg(long, conflicts_with = "chat")]
+        all: bool,
+        /// Folder for one file per chat (with --all or several --chat).
+        /// Existing files are never overwritten; new names get " (2)".
+        #[arg(long, conflicts_with = "output")]
+        out_dir: Option<PathBuf>,
     },
 }
 
@@ -154,12 +163,36 @@ fn run(command: Command) -> Result<(), Box<dyn std::error::Error>> {
             output,
             force,
             chat,
+            all,
+            out_dir,
         } => {
             let cva = matches!(format.to_ascii_lowercase().as_str(), "cva" | "zip");
             let exporter = cv_export::by_name(&format);
             if exporter.is_none() && !cva {
                 return Err(format!("unknown format {format:?} (use txt, md, json or cva)").into());
             }
+            if all || chat.len() > 1 || out_dir.is_some() {
+                let dir = out_dir.ok_or("exporting several chats needs --out-dir")?;
+                let archive = open(&input)?;
+                let ids = if all {
+                    archive.conversation_ids()
+                } else {
+                    let known = archive.conversation_ids();
+                    chat.iter()
+                        .map(|c| {
+                            known
+                                .iter()
+                                .find(|id| id.as_str() == c)
+                                .cloned()
+                                .ok_or_else(|| {
+                                    format!("no chat with id {c:?}; see `chatviewer info`")
+                                })
+                        })
+                        .collect::<Result<Vec<_>, _>>()?
+                };
+                return export_many(&*archive, &ids, exporter.as_deref(), &dir);
+            }
+            let chat = chat.into_iter().next();
             if cva && output.as_deref().is_none_or(|p| p == Path::new("-")) {
                 return Err("cva export needs an output file (-o chat.zip)".into());
             }
@@ -357,6 +390,80 @@ fn print_stats(archive: &dyn ChatArchive) -> Result<(), Box<dyn std::error::Erro
     println!("statistics:");
     for (k, v) in &counts {
         println!("  {k:<36} {v}");
+    }
+    Ok(())
+}
+
+/// One file per chat in `dir`, loading chats in batches (one pass over a
+/// Signal backup per batch). Never overwrites existing files.
+fn export_many(
+    archive: &dyn ChatArchive,
+    ids: &[cv_model::ConversationId],
+    exporter: Option<&dyn cv_core::Exporter>,
+    dir: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    const BATCH: usize = 50;
+    if !dir.is_dir() {
+        return Err(format!("{} is not a folder", dir.display()).into());
+    }
+    let ext = exporter.map_or("zip", |e| e.extension());
+    let (mut written, mut failed, mut media) = (0usize, 0usize, 0u64);
+    for batch in ids.chunks(BATCH) {
+        for data in archive.load_many(batch)? {
+            let stem = cv_core::safe_file_stem(&data.conversation.title);
+            let path = cv_core::unique_path(dir, &stem, ext);
+            let file = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&path)?;
+            let id = data.conversation.id.clone();
+            let outcome: Result<u64, Box<dyn std::error::Error>> = match exporter {
+                None => cv_cva::write_data(archive, data, file)
+                    .map(|s| s.media_written)
+                    .map_err(Into::into),
+                Some(e) => {
+                    let mut out = BufWriter::new(file);
+                    e.export(&data, archive.report(), &mut out)
+                        .map_err(Into::into)
+                        .and_then(|()| out.flush().map_err(Into::into))
+                        .map(|()| 0)
+                }
+            };
+            let name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned();
+            match outcome {
+                Ok(m) => {
+                    written += 1;
+                    media += m;
+                    println!("{id}\t{name}");
+                }
+                Err(e) => {
+                    failed += 1;
+                    let _ = std::fs::remove_file(&path);
+                    eprintln!("{id}: export failed: {e}");
+                }
+            }
+        }
+    }
+    eprintln!(
+        "wrote {written} files to {}{}{}",
+        dir.display(),
+        if exporter.is_none() {
+            format!(" ({media} media files)")
+        } else {
+            String::new()
+        },
+        if failed > 0 {
+            format!("; {failed} chats failed")
+        } else {
+            String::new()
+        }
+    );
+    if failed > 0 {
+        return Err("some chats could not be exported".into());
     }
     Ok(())
 }

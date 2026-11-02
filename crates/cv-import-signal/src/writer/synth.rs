@@ -372,36 +372,37 @@ impl FrameGenerator {
             Vec::new()
         };
 
-        let attachments =
-            if index % self.media_every == 0 && index / self.media_every < self.media.len() {
-                let m = &self.media[index / self.media_every];
-                let n = index / self.media_every;
-                let mut transit_key = [0u8; 64];
-                self.rng.fill_bytes(&mut transit_key);
-                vec![MessageAttachment {
-                    pointer: Some(FilePointer {
-                        content_type: Some("text/plain".into()),
-                        file_name: Some(format!("synthetic-{n}.txt")),
-                        locator_info: Some(file_pointer::LocatorInfo {
-                            key: transit_key.to_vec(),
-                            integrity_check: Some(
-                                file_pointer::locator_info::IntegrityCheck::PlaintextHash(
-                                    m.plaintext_hash.to_vec(),
-                                ),
+        let attachments = if index.is_multiple_of(self.media_every)
+            && index / self.media_every < self.media.len()
+        {
+            let m = &self.media[index / self.media_every];
+            let n = index / self.media_every;
+            let mut transit_key = [0u8; 64];
+            self.rng.fill_bytes(&mut transit_key);
+            vec![MessageAttachment {
+                pointer: Some(FilePointer {
+                    content_type: Some("text/plain".into()),
+                    file_name: Some(format!("synthetic-{n}.txt")),
+                    locator_info: Some(file_pointer::LocatorInfo {
+                        key: transit_key.to_vec(),
+                        integrity_check: Some(
+                            file_pointer::locator_info::IntegrityCheck::PlaintextHash(
+                                m.plaintext_hash.to_vec(),
                             ),
-                            size: m.size,
-                            local_key: Some(m.local_key.to_vec()),
-                            ..Default::default()
-                        }),
+                        ),
+                        size: m.size,
+                        local_key: Some(m.local_key.to_vec()),
                         ..Default::default()
                     }),
-                    was_downloaded: true,
-                    client_uuid: Some(random::<16>(&mut self.rng).to_vec()),
                     ..Default::default()
-                }]
-            } else {
-                Vec::new()
-            };
+                }),
+                was_downloaded: true,
+                client_uuid: Some(random::<16>(&mut self.rng).to_vec()),
+                ..Default::default()
+            }]
+        } else {
+            Vec::new()
+        };
 
         let directional = if outgoing {
             chat_item::DirectionalDetails::Outgoing(chat_item::OutgoingMessageDetails {

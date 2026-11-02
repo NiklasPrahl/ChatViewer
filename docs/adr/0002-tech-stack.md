@@ -1,6 +1,6 @@
 # 0002 – Tech stack: Tauri 2, Rust core, TypeScript UI
 
-- Status: Accepted (UI framework to be confirmed before M4)
+- Status: Accepted (UI framework confirmed as React before M4)
 - Date: 2026-11-02
 
 ## Context
@@ -16,8 +16,10 @@ Comparison of options: [architecture §4](../architecture.md).
   exporter crates, `cv-cli`). Crypto from RustCrypto crates.
 - **GUI:** Tauri 2 shell. Media is served from memory through a custom
   `cv://` URI protocol with Range support.
-- **UI:** TypeScript with Svelte 5 and a virtualized message list.
-  Svelte vs React is confirmed at the start of M4.
+- **UI:** TypeScript with **React 19** (chosen by the maintainer at the
+  start of M4), Vite, and `@tanstack/react-virtual` for the message list.
+  TypeScript 5.9 and Vite 7 are used instead of the brand-new TypeScript
+  7 and Vite 8 majors until those have matured.
 - **CLI:** `chatviewer` binary, bundled per platform via Tauri
   `externalBin` (architecture §9).
 - Importers and exporters are compile-time plugins registered in
@@ -30,7 +32,8 @@ Comparison of options: [architecture §4](../architecture.md).
 - System WebViews differ (WebKitGTK, WebView2, WKWebView), so codec and
   rendering checks are needed per platform. Opus playback needs a Rust
   decoding path.
-- Rust edition 2024, minimum Rust 1.85, `unsafe_code = "deny"` workspace-wide.
+- Rust edition 2024, minimum Rust 1.95 (raised from 1.85 in M4 so dependency
+  security fixes can be used), `unsafe_code = "deny"` workspace-wide.
 
 ## Alternatives considered
 

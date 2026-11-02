@@ -35,3 +35,6 @@ ChatStorage.sqlite*
 
 # CI build of libsignal validator (never committed)
 /libsignal-validator
+
+# Local tool configuration
+/.claude/

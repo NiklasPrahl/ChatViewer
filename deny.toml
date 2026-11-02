@@ -6,6 +6,10 @@ all-features = true
 
 [advisories]
 yanked = "deny"
+# Vulnerabilities fail everywhere; "unmaintained" notices only for our
+# direct dependencies (Tauri's Linux GTK3 bindings pull in unmaintained
+# crates we cannot replace). See ADR 0009.
+unmaintained = "workspace"
 
 [licenses]
 confidence-threshold = 0.9
@@ -20,6 +24,8 @@ allow = [
   "Zlib",
   "Unicode-3.0",
   "CC0-1.0",
+  # File-level copyleft, used unmodified by Tauri (Servo CSS parser). ADR 0009.
+  "MPL-2.0",
 ]
 # The Signal importer (and the fixture generator built on it) are the only
 # places where AGPL-3.0 is accepted (ADR 0001).
