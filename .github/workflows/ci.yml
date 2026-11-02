@@ -21,7 +21,7 @@ jobs:
     name: Secret scan and hook self-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install gitleaks
@@ -43,7 +43,7 @@ jobs:
     outputs:
       has_crates: ${{ steps.check.outputs.has_crates }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - id: check
         run: |
           if ls crates/*/Cargo.toml >/dev/null 2>&1; then
@@ -63,7 +63,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -80,7 +80,7 @@ jobs:
       # libsignal is AGPL-3.0; it is built and run here only, never shipped.
       LIBSIGNAL_TAG: v0.106.1
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - name: Install protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
@@ -106,5 +106,5 @@ jobs:
     if: needs.detect.outputs.has_crates == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
