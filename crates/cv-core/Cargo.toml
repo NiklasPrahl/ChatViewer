@@ -1,0 +1,16 @@
+[package]
+name = "cv-core"
+version = "0.0.0"
+description = "Importer/exporter interfaces, input probing and redacted logging"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+cv-model = { path = "../cv-model" }
+log = { version = "0.4", features = ["std"] }
+thiserror = "2"
+
+[lints]
+workspace = true

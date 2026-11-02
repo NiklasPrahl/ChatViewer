@@ -11,6 +11,7 @@ publish.workspace = true
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 cv-import-signal = { path = "../../crates/cv-import-signal", features = ["writer"] }
+cv-import-whatsapp = { path = "../../crates/cv-import-whatsapp", features = ["synth"] }
 rand = "0.9"
 
 [lints]

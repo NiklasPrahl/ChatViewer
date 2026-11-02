@@ -1,0 +1,21 @@
+[package]
+name = "cv-export"
+version = "0.0.0"
+description = "Exporters: plain text, Markdown, JSON"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+cv-core = { path = "../cv-core" }
+cv-model = { path = "../cv-model" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+insta = "1"
+
+[lints]
+workspace = true

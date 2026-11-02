@@ -38,17 +38,62 @@ enum Command {
         #[arg(long, default_value_t = 3)]
         media: usize,
     },
+    /// WhatsApp export ZIPs, one per supported format variant.
+    Whatsapp {
+        /// Output folder; one subfolder per variant.
+        #[arg(long)]
+        out: PathBuf,
+        #[arg(long, default_value_t = 1)]
+        seed: u64,
+        /// Messages per export.
+        #[arg(long, default_value_t = 120)]
+        messages: usize,
+    },
 }
 
 fn main() -> ExitCode {
-    let Command::Signal {
-        out,
-        seed,
-        chats,
-        no_group,
-        messages,
-        media,
-    } = Cli::parse().command;
+    match Cli::parse().command {
+        Command::Signal {
+            out,
+            seed,
+            chats,
+            no_group,
+            messages,
+            media,
+        } => signal(out, seed, chats, no_group, messages, media),
+        Command::Whatsapp {
+            out,
+            seed,
+            messages,
+        } => whatsapp(&out, seed, messages),
+    }
+}
+
+fn whatsapp(out: &std::path::Path, seed: u64, messages: usize) -> ExitCode {
+    use cv_import_whatsapp::synth::{self, Variant};
+
+    for (i, variant) in Variant::matrix().into_iter().enumerate() {
+        let export = synth::generate(variant, seed + i as u64, messages);
+        let dir = out.join(format!("{i:02}"));
+        let result = std::fs::create_dir_all(&dir)
+            .and_then(|()| synth::write_zip(&export, &dir.join(&export.zip_name)));
+        if let Err(e) = result {
+            eprintln!("error: {e}");
+            return ExitCode::FAILURE;
+        }
+        println!("{i:02} {variant:?}");
+    }
+    ExitCode::SUCCESS
+}
+
+fn signal(
+    out: PathBuf,
+    seed: u64,
+    chats: usize,
+    no_group: bool,
+    messages: usize,
+    media: usize,
+) -> ExitCode {
     let backup = synth::generate(&SynthOptions {
         seed,
         direct_chats: chats,

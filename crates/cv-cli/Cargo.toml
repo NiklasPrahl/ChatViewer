@@ -1,0 +1,27 @@
+[package]
+name = "cv-cli"
+version = "0.0.0"
+description = "chatviewer command-line tool"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "chatviewer"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+cv-core = { path = "../cv-core" }
+cv-export = { path = "../cv-export" }
+cv-import-whatsapp = { path = "../cv-import-whatsapp" }
+cv-model = { path = "../cv-model" }
+log = "0.4"
+
+[dev-dependencies]
+cv-import-whatsapp = { path = "../cv-import-whatsapp", features = ["synth"] }
+tempfile = "3"
+
+[lints]
+workspace = true

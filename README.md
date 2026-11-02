@@ -1,8 +1,7 @@
 # ChatViewer
 
-> **Status: pre-alpha.** Milestone M1: Signal decryption feasibility
-> spike (command line only, no GUI yet). See [docs/plan.md](docs/plan.md)
-> and [ADR 0005](docs/adr/0005-signal-backup-decoding.md).
+> **Status: pre-alpha.** Milestone M2: chat model, WhatsApp import and
+> the `chatviewer` command line (no GUI yet). See [docs/plan.md](docs/plan.md).
 
 A cross-platform desktop viewer (Windows, macOS, Linux) for exported chat
 archives. It renders chats like a messenger and exports them to TXT,
@@ -22,6 +21,17 @@ and never stores chats, media or keys beyond the running session.
 - [Architecture](docs/architecture.md)
 - [Plan and milestones](docs/plan.md)
 - [Architecture Decision Records](docs/adr/)
+
+## Command line (development build)
+
+```bash
+cargo run -p cv-cli -- info path/to/WhatsApp-export.zip --anonymous
+cargo run -p cv-cli -- export path/to/WhatsApp-export.zip --format md -o chat.md
+```
+
+`info` shows the detected source, format variant, warnings and chats.
+`export` writes txt, md (both lossy) or json (lossless). Existing files
+are never overwritten without `--force`.
 
 ## Contributing
 

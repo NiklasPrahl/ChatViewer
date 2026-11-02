@@ -1,0 +1,21 @@
+---
+source: crates/cv-export/tests/golden.rs
+expression: export(&TextExporter)
+---
+# Bob Sample
+# Exported by ChatViewer from test-variant (10 messages). Plain text is lossy:
+# media, reactions and formatting are summarised or left out.
+
+[2024-03-01 09:00:00] System: Messages are end-to-end encrypted.
+[2024-03-01 09:05:00] Alice Example: Hi *Bob*!
+Second line <ok> (edited)
+[2024-03-01 09:06:00] Bob Sample: <image: IMG-0001.jpg> Look
+[2024-03-01 09:07:00] Alice Example: <video omitted>
+[2024-03-02 18:30:00] Bob Sample: <sticker 😀>
+[2024-03-02 18:31:00] Alice Example: <location: 52.52, 13.405> Synthetic Square https://maps.example/?q=52.52,13.405
+[2024-03-02 18:32:00] Bob Sample: Poll: Lunch?
+- Pizza (2 votes)
+- Salad
+[2024-03-02 18:33:00] Alice Example: <message deleted>
+[2024-03-02 18:34:00] Bob Sample: [reply to: Hi *Bob*!] Sure [reactions: 👍]
+[2024-03-02 18:35:00] Alice Example: <unsupported: payment>
