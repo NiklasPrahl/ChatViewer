@@ -1,0 +1,34 @@
+[package]
+name = "chatviewer-app"
+version = "0.0.0"
+description = "ChatViewer desktop app (Tauri shell)"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# Signal support links the AGPL-3.0 importer; the app is then AGPL-3.0
+# as a whole (ADR 0001).
+default = ["signal"]
+signal = ["dep:cv-import-signal"]
+
+[dependencies]
+cv-core = { path = "../../crates/cv-core" }
+cv-cva = { path = "../../crates/cv-cva" }
+cv-export = { path = "../../crates/cv-export" }
+cv-import-signal = { path = "../../crates/cv-import-signal", optional = true }
+cv-import-whatsapp = { path = "../../crates/cv-import-whatsapp" }
+cv-model = { path = "../../crates/cv-model" }
+log = "0.4"
+percent-encoding = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2.12", features = [] }
+tauri-plugin-dialog = "2.8"
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[lints]
+workspace = true

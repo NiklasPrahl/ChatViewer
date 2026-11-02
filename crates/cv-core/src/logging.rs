@@ -41,10 +41,10 @@ impl Log for RingLogger {
             record.target(),
             record.args()
         );
-        if let Some(level) = *self.echo_level.lock().expect("log lock") {
-            if record.level() <= level {
-                eprintln!("{line}");
-            }
+        if let Some(level) = *self.echo_level.lock().expect("log lock")
+            && record.level() <= level
+        {
+            eprintln!("{line}");
         }
         let mut records = self.records.lock().expect("log lock");
         if records.len() == CAPACITY {

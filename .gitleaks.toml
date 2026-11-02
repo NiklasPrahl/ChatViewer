@@ -39,6 +39,10 @@ regex = '''\+[1-9]\d{0,2}[ .\-]?\(?\d{1,4}\)?(?:[ .\-]?\d{2,5}){2,4}'''
     '''^\+44[ .\-]?\(?0?\)?7700[ .\-]?900[ .\-]?\d{3}$''',
   ]
 
+  [[rules.allowlists]]
+  description = "Lockfiles: version build metadata like 0.6.0+11769913"
+  paths = ['''(?:^|/)(?:Cargo\.lock|package-lock\.json)$''']
+
 # WhatsApp media file names and export text outside of fixtures/docs/tools.
 [[rules]]
 id = "whatsapp-media-filename"

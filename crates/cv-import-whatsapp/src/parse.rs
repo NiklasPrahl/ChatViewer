@@ -183,10 +183,10 @@ pub fn parse(container: &Container, options: &ImportOptions) -> (ConversationDat
                 bump(&mut counters, "edited", 1);
             }
             let content = content(body, container, &mut languages, &mut counters);
-            if let Content::Deleted { .. } = content {
-                if locale::deleted(body).is_some_and(|(_, own)| own) {
-                    own_names.extend(s.author.clone());
-                }
+            if let Content::Deleted { .. } = content
+                && locale::deleted(body).is_some_and(|(_, own)| own)
+            {
+                own_names.extend(s.author.clone());
             }
             (
                 Author::Participant(

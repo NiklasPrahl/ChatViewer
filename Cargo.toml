@@ -1,11 +1,11 @@
 [workspace]
 resolver = "3"
 # Layout: docs/architecture.md §5.
-members = ["crates/*", "tools/fixture-gen"]
+members = ["crates/*", "tools/fixture-gen", "app/src-tauri"]
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.95"
 license = "MIT"
 publish = false
 
@@ -14,3 +14,8 @@ unsafe_code = "deny"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
+
+# Optimize dependencies (crypto, compression, protobuf) in debug builds so
+# development builds can open real backups at a usable speed.
+[profile.dev.package."*"]
+opt-level = 2

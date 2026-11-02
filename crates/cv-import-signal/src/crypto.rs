@@ -54,14 +54,14 @@ pub fn strip_pkcs7(data: &[u8]) -> Result<&[u8]> {
 
 /// Decrypts an in-memory AES-256-CBC ciphertext with PKCS#7 padding.
 pub fn aes256_cbc_decrypt(key: &[u8; 32], iv: &[u8; 16], ciphertext: &[u8]) -> Result<Vec<u8>> {
-    if ciphertext.is_empty() || ciphertext.len() % AES_BLOCK != 0 {
+    if ciphertext.is_empty() || !ciphertext.len().is_multiple_of(AES_BLOCK) {
         return Err(Error::Malformed(
             "ciphertext length is not a multiple of the block size",
         ));
     }
     let mut buf = ciphertext.to_vec();
     let mut dec = Aes256CbcDec::new(key.into(), iv.into());
-    for block in buf.chunks_exact_mut(AES_BLOCK) {
+    for block in buf.as_chunks_mut::<AES_BLOCK>().0 {
         dec.decrypt_block_mut(GenericArray::from_mut_slice(block));
     }
     let len = strip_pkcs7(&buf)?.len();
@@ -113,7 +113,7 @@ impl<R: Read> CbcDecryptReader<R> {
         if let Some(held) = self.held.take() {
             self.out.extend_from_slice(&held);
         }
-        for block in self.chunk[..n].chunks_exact_mut(AES_BLOCK) {
+        for block in self.chunk[..n].as_chunks_mut::<AES_BLOCK>().0 {
             self.dec
                 .decrypt_block_mut(GenericArray::from_mut_slice(block));
         }

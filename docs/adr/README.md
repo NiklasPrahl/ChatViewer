@@ -14,3 +14,4 @@ after acceptance. A new ADR supersedes an old one instead.
 | [0006](0006-lossless-import.md) | Lossless import: keep every piece of source data | Accepted |
 | [0007](0007-whatsapp-import.md) | WhatsApp import heuristics | Accepted |
 | [0008](0008-signal-import-mapping.md) | Signal import: mapping to the neutral model | Accepted |
+| [0009](0009-desktop-app-dependencies.md) | Desktop app dependencies: MPL-2.0 and advisories | Accepted |

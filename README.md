@@ -1,8 +1,8 @@
 # ChatViewer
 
-> **Status: pre-alpha.** Milestone M3: WhatsApp and Signal import, the
-> ChatViewer Archive format and the `chatviewer` command line (no GUI
-> yet). See [docs/plan.md](docs/plan.md).
+> **Status: pre-alpha.** Milestone M4: desktop app (Tauri + React) on
+> top of WhatsApp and Signal import, the ChatViewer Archive format and the
+> `chatviewer` command line. See [docs/plan.md](docs/plan.md).
 
 A cross-platform desktop viewer (Windows, macOS, Linux) for exported chat
 archives. It renders chats like a messenger and exports them to TXT,
@@ -23,6 +23,18 @@ and never stores chats, media or keys beyond the running session.
 - [Plan and milestones](docs/plan.md)
 - [Architecture Decision Records](docs/adr/)
 
+## Desktop app (development build)
+
+Requires Rust 1.95+ and Node.js 22. On Linux, also the WebKitGTK
+development packages listed in `.github/workflows/ci.yml`.
+
+```bash
+cd app && npm install && npm run tauri dev
+```
+
+`npm run dev:mock` shows the interface in a browser with synthetic data
+(no Rust backend), useful for UI work.
+
 ## Command line (development build)
 
 ```bash
@@ -30,6 +42,7 @@ cargo run -p cv-cli -- info path/to/WhatsApp-export.zip --anonymous
 cargo run -p cv-cli -- export path/to/WhatsApp-export.zip --format md -o chat.md
 cargo run -p cv-cli -- info path/to/SignalBackups --stats
 cargo run -p cv-cli -- export path/to/SignalBackups --chat c12 --format cva -o chat.zip
+cargo run -p cv-cli -- export path/to/SignalBackups --all --format cva --out-dir exports/
 ```
 
 - `info` shows the detected source, format variant, warnings and chats.
@@ -37,6 +50,9 @@ cargo run -p cv-cli -- export path/to/SignalBackups --chat c12 --format cva -o c
 - `export` writes txt or md (both lossy), json (lossless), or cva: a ZIP
   with all media that ChatViewer can reopen
   ([format](docs/formats/cva.md)).
+- `--all` or repeated `--chat` with `--out-dir` writes **one file per
+  chat**, e.g. one decrypted, self-contained ZIP per Signal chat. The app
+  does the same via "Export chats…".
 - Signal backups ask for the 64-character recovery key with a hidden
   prompt, or read it from stdin with `--recovery-key-stdin`.
 - Existing files are never overwritten without `--force`.

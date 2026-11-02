@@ -65,7 +65,16 @@ pub fn write(
     id: &ConversationId,
     out: impl Write + Seek,
 ) -> Result<WriteSummary> {
-    let mut data = archive.load(id)?;
+    write_data(archive, archive.load(id)?, out)
+}
+
+/// Writes an already loaded conversation as CVA (for batch exports that
+/// load many chats in one pass). Media are read from `archive`.
+pub fn write_data(
+    archive: &dyn ChatArchive,
+    mut data: ConversationData,
+    out: impl Write + Seek,
+) -> Result<WriteSummary> {
     let mut zip = zip::ZipWriter::new(out);
     let deflate = SimpleFileOptions::default();
     // Media are usually compressed already.

@@ -127,12 +127,11 @@ impl SignalArchive {
                 Some(frame::Item::Recipient(r)) => {
                     bump("recipients");
                     let info = recipient_info(r, raw.to_vec());
-                    if let Some(recipient::Destination::Contact(c)) = &r.destination {
-                        if let Some(aci) =
+                    if let Some(recipient::Destination::Contact(c)) = &r.destination
+                        && let Some(aci) =
                             c.aci.as_deref().and_then(|a| <[u8; 16]>::try_from(a).ok())
-                        {
-                            aci_to_recipient.insert(aci, r.id);
-                        }
+                    {
+                        aci_to_recipient.insert(aci, r.id);
                     }
                     recipients.insert(r.id, info);
                 }
@@ -171,10 +170,10 @@ impl SignalArchive {
             .iter()
             .find(|(_, r)| r.is_self)
             .map(|(id, _)| *id);
-        if let (Some(id), Some(name)) = (self_id, self_name) {
-            if let Some(r) = recipients.get_mut(&id) {
-                r.name = name;
-            }
+        if let (Some(id), Some(name)) = (self_id, self_name)
+            && let Some(r) = recipients.get_mut(&id)
+        {
+            r.name = name;
         }
         if let Some(id) = self_id {
             aci_to_recipient.retain(|_, r| *r != id);
@@ -499,6 +498,20 @@ impl ChatArchive for SignalArchive {
             .find(|c| chat_id(c.id) == *id)
             .ok_or_else(|| Error::NoSuchConversation(id.to_string()))?;
         Ok(self.load_chats(&[chat.id])?.remove(0))
+    }
+
+    fn load_many(&self, ids: &[ConversationId]) -> Result<Vec<ConversationData>> {
+        let chats = ids
+            .iter()
+            .map(|id| {
+                self.chats
+                    .iter()
+                    .find(|c| chat_id(c.id) == *id)
+                    .map(|c| c.id)
+                    .ok_or_else(|| Error::NoSuchConversation(id.to_string()))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        self.load_chats(&chats)
     }
 
     fn load_all(&self) -> Result<Vec<ConversationData>> {
