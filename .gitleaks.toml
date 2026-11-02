@@ -1,0 +1,68 @@
+# gitleaks configuration: default rules plus project-specific rules that
+# catch personal chat data. Used by .githooks/pre-commit and CI.
+
+title = "ChatViewer gitleaks config"
+
+[extend]
+useDefault = true
+
+# Signal recovery key (Account Entropy Pool): 64 characters of [0-9a-z].
+[[rules]]
+id = "signal-recovery-key"
+description = "Possible Signal recovery key (64 chars [0-9a-z])"
+regex = '''(?i)\b[0-9a-z]{64}\b'''
+entropy = 3.5
+
+  [[rules.allowlists]]
+  description = "Pure hex strings (SHA-256 digests) are not recovery keys"
+  regexTarget = "match"
+  regexes = ['''^[0-9a-fA-F]{64}$''']
+
+# Same key, displayed in groups of four.
+[[rules]]
+id = "signal-recovery-key-grouped"
+description = "Possible Signal recovery key in groups of four"
+regex = '''(?i)\b(?:[0-9a-z]{4}[ -]){15}[0-9a-z]{4}\b'''
+
+# International phone numbers. Fictional ranges are allowed.
+[[rules]]
+id = "phone-number"
+description = "Possible real phone number (international format)"
+regex = '''\+[1-9]\d{0,2}[ .\-]?\(?\d{1,4}\)?(?:[ .\-]?\d{2,5}){2,4}'''
+
+  [[rules.allowlists]]
+  description = "Fictional ranges: US 555-01xx, UK Ofcom drama numbers"
+  regexTarget = "match"
+  regexes = [
+    '''^\+1[ .\-]?\(?\d{3}\)?[ .\-]?555[ .\-]?01\d{2}$''',
+    '''^\+1[ .\-]?\(?555\)?[ .\-]?01\d{2}$''',
+    '''^\+44[ .\-]?\(?0?\)?7700[ .\-]?900[ .\-]?\d{3}$''',
+  ]
+
+# WhatsApp media file names and export text outside of fixtures/docs/tools.
+[[rules]]
+id = "whatsapp-media-filename"
+description = "WhatsApp media file name (possible real export content)"
+regex = '''\b(?:(?:IMG|VID|AUD|PTT|STK|DOC)-\d{8}-WA\d{4}|\d{8}-(?:PHOTO|VIDEO|AUDIO|STICKER|GIF)-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})\b'''
+
+  [[rules.allowlists]]
+  paths = ['''^(?:docs|fixtures|tools)/''']
+
+[[rules]]
+id = "whatsapp-export-notice"
+description = "WhatsApp end-to-end encryption notice (possible real export content)"
+regex = '''(?i)(?:messages and calls are end-to-end encrypted|nachrichten und anrufe sind ende-zu-ende-verschl)'''
+
+  [[rules.allowlists]]
+  paths = ['''^(?:docs|fixtures|tools)/''']
+
+# Absolute local home paths leak user names.
+[[rules]]
+id = "local-home-path"
+description = "Absolute home directory path"
+regex = '''(?:/Users/|/home/|[A-Za-z]:\\Users\\)[A-Za-z0-9._-]+'''
+
+  [[rules.allowlists]]
+  description = "Generic placeholders"
+  regexTarget = "match"
+  regexes = ['''(?i)(?:/Users/|/home/|\\Users\\)(?:runner|user|username|example|me|you|alice|bob)$''']

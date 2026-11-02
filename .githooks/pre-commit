@@ -1,0 +1,49 @@
+#!/bin/sh
+# Pre-commit hook: blocks personal chat data, secrets and large files.
+# Activate once per clone: git config core.hooksPath .githooks
+
+set -eu
+
+MAX_BYTES=1048576 # 1 MiB per staged file
+
+fail() {
+    echo "pre-commit: $1" >&2
+    exit 1
+}
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+# 1. Forbidden file names (real exports, backups, personal notes).
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -n "$staged" ]; then
+    bad=$(printf '%s\n' "$staged" | grep -v '^fixtures/' | grep -E -i \
+        '(\.zip$|(^|/)_chat\.txt$|WhatsApp Chat.*\.txt$|(^|/)SignalBackups/|(^|/)signal-backup-|\.backup$|\.crypt1[245]$|msgstore.*\.db|ChatStorage\.sqlite|(^|/)CLAUDE\.local\.md$)' \
+        || true)
+    [ -z "$bad" ] || fail "refusing to commit possible chat data or personal files:
+$bad
+Synthetic fixtures belong in fixtures/."
+fi
+
+# 2. File size limit.
+too_large=$(printf '%s\n' "$staged" | while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    size=$(git cat-file -s ":$f" 2>/dev/null || echo 0)
+    [ "$size" -le "$MAX_BYTES" ] || echo "$f ($size bytes)"
+done)
+[ -z "$too_large" ] || fail "files exceed $MAX_BYTES bytes:
+$too_large"
+
+# 3. Secret and personal-data scan.
+command -v gitleaks >/dev/null 2>&1 \
+    || fail "gitleaks is not installed (https://github.com/gitleaks/gitleaks)."
+gitleaks git --pre-commit --staged --redact --no-banner \
+    --config "$repo_root/.gitleaks.toml" "$repo_root" \
+    || fail "gitleaks found possible secrets or personal data (see above)."
+
+# 4. Rust formatting, once the workspace has crates.
+if ls crates/*/Cargo.toml >/dev/null 2>&1; then
+    cargo fmt --all --check || fail "run 'cargo fmt --all'."
+fi
+
+exit 0

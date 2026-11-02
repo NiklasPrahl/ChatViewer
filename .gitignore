@@ -1,0 +1,34 @@
+# Build output
+/target/
+**/node_modules/
+/app/ui/dist/
+/app/src-tauri/target/
+
+# Personal notes
+CLAUDE.local.md
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Never commit real chat data. Synthetic fixtures live in fixtures/ only.
+*.zip
+!/fixtures/**/*.zip
+_chat.txt
+!/fixtures/**/_chat.txt
+WhatsApp Chat*.txt
+SignalBackups/
+signal-backup-*/
+*.backup
+*.crypt12
+*.crypt14
+*.crypt15
+msgstore*.db*
+ChatStorage.sqlite*
+
+# Exports produced while testing locally
+/out/
+/exports/

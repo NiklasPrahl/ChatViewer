@@ -1,0 +1,11 @@
+* text=auto eol=lf
+*.zip binary
+*.jpg binary
+*.png binary
+*.webp binary
+*.ogg binary
+*.opus binary
+*.m4a binary
+*.mp4 binary
+# Fixtures must keep their exact bytes (CRLF/BOM variants are intentional).
+/fixtures/** -text

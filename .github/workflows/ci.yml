@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITLEAKS_VERSION: "8.30.1"
+  GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+
+jobs:
+  secrets:
+    name: Secret scan and hook self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" gitleaks
+          sudo install gitleaks /usr/local/bin/gitleaks
+      - name: Scan full history
+        run: gitleaks git --config .gitleaks.toml --redact --no-banner -v .
+      - name: Hook self-test
+        run: sh tools/ci/hook-selftest.sh
+
+  detect:
+    name: Detect workspace
+    runs-on: ubuntu-latest
+    outputs:
+      has_crates: ${{ steps.check.outputs.has_crates }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: check
+        run: |
+          if ls crates/*/Cargo.toml >/dev/null 2>&1; then
+            echo "has_crates=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No crates yet; Rust jobs are skipped."
+            echo "has_crates=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  rust:
+    name: Rust (${{ matrix.os }})
+    needs: detect
+    if: needs.detect.outputs.has_crates == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --workspace --all-features
+
+  deny:
+    name: cargo-deny
+    needs: detect
+    if: needs.detect.outputs.has_crates == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: EmbarkStudios/cargo-deny-action@v2

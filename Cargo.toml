@@ -1,0 +1,18 @@
+[workspace]
+resolver = "3"
+# Crates are added from milestone M2 on (see docs/architecture.md §5).
+# Cargo rejects a workspace without members, so CI skips Rust jobs until
+# the first crate exists.
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
