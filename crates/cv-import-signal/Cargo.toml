@@ -28,7 +28,7 @@ required-features = ["writer"]
 
 [dependencies]
 aes = "0.8"
-base64 = "0.22"
+base64 = "0.23"
 cv-core = { path = "../cv-core" }
 cv-model = { path = "../cv-model" }
 log = "0.4"
