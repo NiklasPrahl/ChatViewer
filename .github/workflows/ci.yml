@@ -118,7 +118,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
       - name: Restore validator
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: libsignal-validator
           key: libsignal-validator-${{ env.LIBSIGNAL_TAG }}-${{ runner.os }}
