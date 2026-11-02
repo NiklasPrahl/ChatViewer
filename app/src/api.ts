@@ -31,6 +31,7 @@ export interface Api {
   pickFolder(): Promise<string | null>;
   closeArchive(handle: number): Promise<void>;
   log(): Promise<string[]>;
+  about(): Promise<AboutInfo>;
   getTheme(): Promise<Theme>;
   setTheme(theme: Theme): Promise<void>;
   /** Asks for an archive file or folder; null if cancelled. */
@@ -41,6 +42,12 @@ export interface Api {
   blobUrl(handle: number, blob: string, mime?: string): string;
   /** Subscribes to files dropped on the window. */
   onDrop(callback: (paths: string[]) => void): () => void;
+}
+
+export interface AboutInfo {
+  version: string;
+  signal: boolean;
+  third_party: string | null;
 }
 
 export const isTauri = (): boolean => "__TAURI_INTERNALS__" in window;
@@ -85,6 +92,7 @@ async function tauriApi(): Promise<Api> {
     },
     closeArchive: (handle) => invoke("close_archive", { handle }),
     log: () => invoke("log_snapshot"),
+    about: () => invoke("about"),
     getTheme: async () => ((await invoke<{ theme: Theme }>("get_settings")).theme),
     setTheme: (theme) => invoke("set_settings", { settings: { theme } }),
     pickInput: async (kind) => {

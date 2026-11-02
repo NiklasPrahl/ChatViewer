@@ -145,3 +145,41 @@ export function InfoPanel({ report, importer, onClose, onReopen }: {
     </Modal>
   );
 }
+
+const REPOSITORY = "https://github.com/NiklasPrahl/ChatViewer";
+
+export function AboutDialog({ getAbout, onClose }: {
+  getAbout: () => Promise<{ version: string; signal: boolean; third_party: string | null }>;
+  onClose: () => void;
+}) {
+  const [info, setInfo] = useState<{ version: string; signal: boolean; third_party: string | null } | null>(null);
+  useEffect(() => {
+    getAbout().then(setInfo).catch(() => setInfo(null));
+  }, [getAbout]);
+  return (
+    <Modal title="About ChatViewer" onClose={onClose} wide>
+      <p>
+        Version {info?.version ?? "…"}. An offline viewer for exported chats: nothing is uploaded,
+        and chats, media and keys are never stored by the app.
+      </p>
+      <p className="small">
+        ChatViewer's own code is licensed under the MIT License.{" "}
+        {info?.signal && (
+          <>
+            This build includes the Signal importer, which uses Signal's AGPL-3.0 backup format
+            definitions; the application as a whole is therefore distributed under the GNU Affero
+            General Public License v3.0. The license texts are included with the app.{" "}
+          </>
+        )}
+        Source code: <code>{REPOSITORY}</code>
+      </p>
+      <h3>Third-party software</h3>
+      {info?.third_party ? (
+        <pre className="licenses">{info.third_party}</pre>
+      ) : (
+        <p className="muted small">The full list of third-party licenses is included in release builds.</p>
+      )}
+      <div className="buttons"><button className="primary" onClick={onClose} autoFocus>Close</button></div>
+    </Modal>
+  );
+}

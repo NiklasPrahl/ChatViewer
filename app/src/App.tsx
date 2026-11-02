@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { type Api, api as loadApi, errorMessage } from "./api";
 import { ChatList } from "./components/ChatList";
-import { ErrorDialog, InfoPanel, KeyDialog } from "./components/Dialogs";
+import { AboutDialog, ErrorDialog, InfoPanel, KeyDialog } from "./components/Dialogs";
 import { ExportChats } from "./components/ExportChats";
 import { MessageList } from "./components/MessageList";
 import type { ChatInfo, OpenResult, Theme } from "./types";
@@ -21,6 +21,7 @@ export function App() {
   const [keyPrompt, setKeyPrompt] = useState<{ path: string; prompt: string } | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   useEffect(() => {
     loadApi().then(async (a) => {
@@ -104,6 +105,7 @@ export function App() {
         <span className="spacer" />
         {opened && <button onClick={() => setShowInfo(true)}>About this archive</button>}
         {opened && <button className="primary" onClick={() => setShowExport(true)}>Export chats…</button>}
+        <button onClick={() => setShowAbout(true)} aria-label="About ChatViewer">About</button>
         <label className="theme">
           <span className="sr-only">Theme</span>
           <select value={theme} onChange={(e) => changeTheme(e.target.value as Theme)} aria-label="Theme">
@@ -180,6 +182,7 @@ export function App() {
           onClose={() => setShowExport(false)}
         />
       )}
+      {showAbout && api && <AboutDialog getAbout={() => api.about()} onClose={() => setShowAbout(false)} />}
       {error && api && <ErrorDialog message={error} onClose={() => setError(null)} getLog={() => api.log()} />}
     </div>
   );

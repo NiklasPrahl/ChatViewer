@@ -244,3 +244,4 @@ button.link { background: none; border: none; padding: 0; color: var(--accent); 
 .progress span { position: relative; }
 .selection-note { margin: 12px 0 0; }
 .buttons button, .export-toolbar button { white-space: nowrap; }
+.licenses { max-height: 40vh; overflow: auto; font-size: 11px; background: var(--panel-2); padding: 10px; border-radius: 8px; white-space: pre-wrap; }

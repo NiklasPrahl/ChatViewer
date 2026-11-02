@@ -1,0 +1,108 @@
+name: Release
+
+# Builds unsigned installers for macOS, Windows and Linux with the
+# chatviewer CLI bundled. A pushed tag `v*` creates a draft GitHub release;
+# a manual run only produces workflow artifacts.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  draft:
+    name: Create draft release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+            --title "ChatViewer $GITHUB_REF_NAME" --notes-file docs/release-notes.md
+
+  build:
+    name: Build (${{ matrix.target }})
+    needs: [draft]
+    # Also run on manual dispatch, where the draft job is skipped.
+    if: ${{ !failure() && !cancelled() }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          # Oldest supported runner, for a compatible glibc baseline.
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    env:
+      TARGET: ${{ matrix.target }}
+      # linuxdeploy (AppImage) runs without FUSE on CI runners.
+      APPIMAGE_EXTRACT_AND_RUN: "1"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev \
+            libayatana-appindicator3-dev librsvg2-dev patchelf rpm
+      - name: Install cargo-about
+        run: cargo install cargo-about --locked --version 0.9.3
+      - name: Frontend dependencies
+        working-directory: app
+        run: npm ci
+      - name: Third-party notices
+        run: sh tools/licenses/generate.sh
+      - name: CLI sidecar
+        run: sh tools/release/prepare-sidecar.sh "$TARGET"
+      - name: Build app bundles
+        working-directory: app
+        run: npx tauri build --target "$TARGET" --config src-tauri/tauri.release.conf.json
+
+      - name: Smoke test
+        run: sh tools/release/smoke-test.sh "$TARGET"
+
+      - name: Collect bundles and checksums
+        run: |
+          mkdir -p dist
+          find "target/$TARGET/release/bundle" -type f \
+            \( -name '*.dmg' -o -name '*.msi' -o -name '*-setup.exe' -o -name '*.deb' \
+               -o -name '*.rpm' -o -name '*.AppImage' \) -exec cp {} dist/ \;
+          cd dist
+          for f in *; do
+            if command -v sha256sum >/dev/null; then sha256sum "$f" > "$f.sha256";
+            else shasum -a 256 "$f" > "$f.sha256"; fi
+          done
+          ls -la
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chatviewer-${{ matrix.target }}
+          path: dist/*
+      - name: Upload to draft release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber

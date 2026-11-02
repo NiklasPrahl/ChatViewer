@@ -254,6 +254,7 @@ export function mockApi(): Api {
     },
     pickFolder: async () => "/demo/Exports",
     closeArchive: async () => {},
+    about: async () => ({ version: "0.1.0 (mock)", signal: true, third_party: null }),
     log: async () => ["INFO  cv_core: mock backend", "INFO  app: archive opened"],
     getTheme: async () => theme,
     setTheme: async (t) => {

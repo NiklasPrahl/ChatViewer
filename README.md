@@ -1,8 +1,8 @@
 # ChatViewer
 
-> **Status: pre-alpha.** Milestone M4: desktop app (Tauri + React) on
-> top of WhatsApp and Signal import, the ChatViewer Archive format and the
-> `chatviewer` command line. See [docs/plan.md](docs/plan.md).
+> **Status: pre-alpha.** Milestone M5: installable, unsigned builds for
+> macOS, Windows and Linux with the `chatviewer` CLI included. See
+> [docs/plan.md](docs/plan.md).
 
 A cross-platform desktop viewer (Windows, macOS, Linux) for exported chat
 archives. It renders chats like a messenger and exports them to TXT,
@@ -23,9 +23,24 @@ and never stores chats, media or keys beyond the running session.
 - [Plan and milestones](docs/plan.md)
 - [Architecture Decision Records](docs/adr/)
 
+## Installation
+
+Download the build for your system from the GitHub releases. Builds are
+unsigned; [the release notes](docs/release-notes.md) explain how to open
+them on macOS and Windows and where the bundled `chatviewer` CLI lives.
+
+To build installers locally (needs Rust 1.95+, Node.js 22, cmake and
+`cargo-about`):
+
+```bash
+sh tools/licenses/generate.sh
+sh tools/release/prepare-sidecar.sh
+cd app && npm ci && npx tauri build --config src-tauri/tauri.release.conf.json
+```
+
 ## Desktop app (development build)
 
-Requires Rust 1.95+ and Node.js 22. On Linux, also the WebKitGTK
+Requires Rust 1.95+, Node.js 22 and cmake. On Linux, also the WebKitGTK
 development packages listed in `.github/workflows/ci.yml`.
 
 ```bash

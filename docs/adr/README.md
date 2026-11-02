@@ -15,3 +15,4 @@ after acceptance. A new ADR supersedes an old one instead.
 | [0007](0007-whatsapp-import.md) | WhatsApp import heuristics | Accepted |
 | [0008](0008-signal-import-mapping.md) | Signal import: mapping to the neutral model | Accepted |
 | [0009](0009-desktop-app-dependencies.md) | Desktop app dependencies: MPL-2.0 and advisories | Accepted |
+| [0010](0010-packaging-and-media.md) | Packaging, bundled CLI and media playback | Accepted |
