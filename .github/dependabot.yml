@@ -5,12 +5,39 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      # RustCrypto crates only work as a matching set (shared `digest` and
+      # `cipher` traits); upgrading one alone never compiles.
+      rustcrypto:
+        patterns: ["aes", "cbc", "ctr", "hkdf", "hmac", "sha2", "cipher", "digest", "subtle"]
+      tauri:
+        patterns: ["tauri", "tauri-*"]
+      minor-and-patch:
+        update-types: ["minor", "patch"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
   - package-ecosystem: npm
     directory: "/app"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      # Vite, its React plugin and Vitest must move together (peer ranges).
+      vite-toolchain:
+        patterns: ["vite", "@vitejs/*", "vitest", "@vitest/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      tauri:
+        patterns: ["@tauri-apps/*"]
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # TypeScript 7 (native compiler) is deliberately not adopted yet; see
+      # docs/adr/0002-tech-stack.md.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
