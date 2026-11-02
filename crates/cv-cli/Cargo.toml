@@ -32,7 +32,7 @@ log = "0.4"
 [dev-dependencies]
 cv-cva = { path = "../cv-cva" }
 cv-import-signal = { path = "../cv-import-signal", features = ["writer"] }
-rand = "0.9"
+rand = "0.10"
 cv-import-whatsapp = { path = "../cv-import-whatsapp", features = ["synth"] }
 tempfile = "3"
 

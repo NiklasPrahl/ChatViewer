@@ -12,7 +12,7 @@ publish.workspace = true
 clap = { version = "4", features = ["derive"] }
 cv-import-signal = { path = "../../crates/cv-import-signal", features = ["writer"] }
 cv-import-whatsapp = { path = "../../crates/cv-import-whatsapp", features = ["synth"] }
-rand = "0.9"
+rand = "0.10"
 
 [lints]
 workspace = true

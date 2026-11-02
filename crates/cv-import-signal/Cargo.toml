@@ -44,7 +44,7 @@ sha2 = "0.10"
 subtle = "2"
 thiserror = "2"
 zeroize = { version = "1", features = ["derive"] }
-rand = { version = "0.9", optional = true }
+rand = { version = "0.10", optional = true }
 clap = { version = "4", features = ["derive"], optional = true }
 rpassword = { version = "7", optional = true }
 
@@ -54,7 +54,7 @@ protox = "0.10"
 
 [dev-dependencies]
 cv-cva = { path = "../cv-cva" }
-rand = "0.9"
+rand = "0.10"
 tempfile = "3"
 
 [lints]
