@@ -1,0 +1,48 @@
+---
+source: crates/cv-export/tests/golden.rs
+expression: export(&MarkdownExporter)
+---
+# Bob Sample
+
+> Exported by ChatViewer from `test-variant` (10 messages). Markdown is lossy: media are listed by name, reactions and formatting are summarised.
+
+## 2024-03-01
+
+*09:00 · Messages are end-to-end encrypted.*
+
+**Alice Example** · 09:05 · edited  
+Hi \*Bob\*!  
+Second line \<ok\>
+
+**Bob Sample** · 09:06  
+\<image: IMG-0001.jpg\>  
+Look
+
+**Alice Example** · 09:07  
+\<video omitted\>  
+
+## 2024-03-02
+
+**Bob Sample** · 18:30  
+\<sticker 😀\>  
+
+**Alice Example** · 18:31  
+\<location: 52.52, 13.405\> Synthetic Square  
+https://maps.example/?q=52.52,13.405
+
+**Bob Sample** · 18:32  
+Poll: Lunch?  
+- Pizza (2 votes)  
+- Salad
+
+**Alice Example** · 18:33  
+\<message deleted\>  
+
+**Bob Sample** · 18:34  
+> Hi \*Bob\*!
+
+Sure
+👍
+
+**Alice Example** · 18:35  
+\<unsupported: payment\>

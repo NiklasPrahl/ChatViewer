@@ -46,7 +46,8 @@ description = "WhatsApp media file name (possible real export content)"
 regex = '''\b(?:(?:IMG|VID|AUD|PTT|STK|DOC)-\d{8}-WA\d{4}|\d{8}-(?:PHOTO|VIDEO|AUDIO|STICKER|GIF)-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})\b'''
 
   [[rules.allowlists]]
-  paths = ['''^(?:docs|fixtures|tools)/''']
+  # The WhatsApp importer must know these patterns to parse exports.
+  paths = ['''^(?:docs|fixtures|tools|crates/cv-import-whatsapp)/''']
 
 [[rules]]
 id = "whatsapp-export-notice"
@@ -54,7 +55,8 @@ description = "WhatsApp end-to-end encryption notice (possible real export conte
 regex = '''(?i)(?:messages and calls are end-to-end encrypted|nachrichten und anrufe sind ende-zu-ende-verschl)'''
 
   [[rules.allowlists]]
-  paths = ['''^(?:docs|fixtures|tools)/''']
+  # The WhatsApp importer must know these patterns to parse exports.
+  paths = ['''^(?:docs|fixtures|tools|crates/cv-import-whatsapp)/''']
 
 # Absolute local home paths leak user names.
 [[rules]]

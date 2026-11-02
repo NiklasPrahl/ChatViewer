@@ -12,3 +12,4 @@ after acceptance. A new ADR supersedes an old one instead.
 | [0004](0004-cva-archive-format.md) | ChatViewer Archive (CVA) format | Proposed |
 | [0005](0005-signal-backup-decoding.md) | Signal local backup decoding (M1 spike results) | Accepted |
 | [0006](0006-lossless-import.md) | Lossless import: keep every piece of source data | Accepted |
+| [0007](0007-whatsapp-import.md) | WhatsApp import heuristics | Accepted |

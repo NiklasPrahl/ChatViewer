@@ -1,0 +1,330 @@
+---
+source: crates/cv-export/tests/golden.rs
+expression: stable
+---
+{
+  "format": "chatviewer-json",
+  "format_version": "1.0",
+  "generator": {
+    "name": "chatviewer",
+    "version": "<version>"
+  },
+  "source": {
+    "app": "test",
+    "platform": "android",
+    "variant": "test-variant",
+    "confidence": 100
+  },
+  "conversation": {
+    "id": "c1",
+    "kind": "direct",
+    "title": "Bob Sample",
+    "participants": [
+      "p1",
+      "p2"
+    ]
+  },
+  "participants": [
+    {
+      "id": "p1",
+      "display_name": "Alice Example",
+      "is_self": "yes"
+    },
+    {
+      "id": "p2",
+      "display_name": "Bob Sample",
+      "is_self": "no"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m0",
+      "seq": 0,
+      "timestamp": {
+        "kind": "naive_local",
+        "value": "2024-03-01T09:00:00"
+      },
+      "author": {
+        "type": "system"
+      },
+      "content": {
+        "type": "system",
+        "kind": "encryption_notice",
+        "text": "Messages are end-to-end encrypted."
+      },
+      "extra": {
+        "raw": {
+          "encoding": "text",
+          "format": "test",
+          "text": "raw line 0"
+        }
+      }
+    },
+    {
+      "id": "m1",
+      "seq": 1,
+      "timestamp": {
+        "kind": "naive_local",
+        "value": "2024-03-01T09:05:00"
+      },
+      "author": {
+        "type": "participant",
+        "id": "p1"
+      },
+      "content": {
+        "type": "text",
+        "text": "Hi *Bob*!\nSecond line <ok>"
+      },
+      "flags": {
+        "edited": true
+      },
+      "extra": {
+        "raw": {
+          "encoding": "text",
+          "format": "test",
+          "text": "raw line 1"
+        }
+      }
+    },
+    {
+      "id": "m2",
+      "seq": 2,
+      "timestamp": {
+        "kind": "naive_local",
+        "value": "2024-03-01T09:06:00"
+      },
+      "author": {
+        "type": "participant",
+        "id": "p2"
+      },
+      "content": {
+        "type": "media",
+        "attachments": [
+          {
+            "kind": "image",
+            "mime": "image/jpeg",
+            "file_name": "IMG-0001.jpg",
+            "availability": {
+              "status": "available",
+              "blob": "IMG-0001.jpg",
+              "integrity": "unchecked"
+            }
+          }
+        ],
+        "caption": {
+          "text": "Look"
+        }
+      },
+      "extra": {
+        "raw": {
+          "encoding": "text",
+          "format": "test",
+          "text": "raw line 2"
+        }
+      }
+    },
+    {
+      "id": "m3",
+      "seq": 3,
+      "timestamp": {
+        "kind": "naive_local",
+        "value": "2024-03-01T09:07:00"
+      },
+      "author": {
+        "type": "participant",
+        "id": "p1"
+      },
+      "content": {
+        "type": "media",
+        "attachments": [
+          {
+            "kind": "video",
+            "availability": {
+              "status": "omitted"
+            }
+          }
+        ]
+      },
+      "extra": {
+        "raw": {
+          "encoding": "text",
+          "format": "test",
+          "text": "raw line 3"
+        }
+      }
+    },
+    {
+      "id": "m4",
+      "seq": 4,
+      "timestamp": {
+        "kind": "naive_local",
+        "value": "2024-03-02T18:30:00"
+      },
+      "author": {
+        "type": "participant",
+        "id": "p2"
+      },
+      "content": {
+        "type": "sticker",
+        "emoji": "😀",
+        "image": {
+          "kind": "sticker",
+          "availability": {
+            "status": "not_in_backup"
+          }
+        }
+      },
+      "extra": {
+        "raw": {
+          "encoding": "text",
+          "format": "test",
+          "text": "raw line 4"
+        }
+      }
+    },
+    {
+      "id": "m5",
+      "seq": 5,
+      "timestamp": {
+        "kind": "naive_local",
+        "value": "2024-03-02T18:31:00"
+      },
+      "author": {
+        "type": "participant",
+        "id": "p1"
+      },
+      "content": {
+        "type": "location",
+        "latitude": 52.52,
+        "longitude": 13.405,
+        "name": "Synthetic Square",
+        "url": "https://maps.example/?q=52.52,13.405"
+      },
+      "extra": {
+        "raw": {
+          "encoding": "text",
+          "format": "test",
+          "text": "raw line 5"
+        }
+      }
+    },
+    {
+      "id": "m6",
+      "seq": 6,
+      "timestamp": {
+        "kind": "naive_local",
+        "value": "2024-03-02T18:32:00"
+      },
+      "author": {
+        "type": "participant",
+        "id": "p2"
+      },
+      "content": {
+        "type": "poll",
+        "question": "Lunch?",
+        "options": [
+          {
+            "text": "Pizza",
+            "votes": 2
+          },
+          {
+            "text": "Salad"
+          }
+        ]
+      },
+      "extra": {
+        "raw": {
+          "encoding": "text",
+          "format": "test",
+          "text": "raw line 6"
+        }
+      }
+    },
+    {
+      "id": "m7",
+      "seq": 7,
+      "timestamp": {
+        "kind": "naive_local",
+        "value": "2024-03-02T18:33:00"
+      },
+      "author": {
+        "type": "participant",
+        "id": "p1"
+      },
+      "content": {
+        "type": "deleted"
+      },
+      "extra": {
+        "raw": {
+          "encoding": "text",
+          "format": "test",
+          "text": "raw line 7"
+        }
+      }
+    },
+    {
+      "id": "m8",
+      "seq": 8,
+      "timestamp": {
+        "kind": "naive_local",
+        "value": "2024-03-02T18:34:00"
+      },
+      "author": {
+        "type": "participant",
+        "id": "p2"
+      },
+      "content": {
+        "type": "text",
+        "text": "Sure"
+      },
+      "quote": {
+        "target": "m1",
+        "author": "p1",
+        "snippet": {
+          "text": "Hi *Bob*!"
+        }
+      },
+      "reactions": [
+        {
+          "emoji": "👍",
+          "author": "p1",
+          "timestamp": {
+            "kind": "utc_millis",
+            "value": 1709400000000
+          }
+        }
+      ],
+      "extra": {
+        "raw": {
+          "encoding": "text",
+          "format": "test",
+          "text": "raw line 8"
+        }
+      }
+    },
+    {
+      "id": "m9",
+      "seq": 9,
+      "timestamp": {
+        "kind": "naive_local",
+        "value": "2024-03-02T18:35:00"
+      },
+      "author": {
+        "type": "participant",
+        "id": "p1"
+      },
+      "content": {
+        "type": "unsupported",
+        "source_kind": "payment",
+        "note": "not mapped yet"
+      },
+      "extra": {
+        "raw": {
+          "encoding": "text",
+          "format": "test",
+          "text": "raw line 9"
+        }
+      }
+    }
+  ]
+}
