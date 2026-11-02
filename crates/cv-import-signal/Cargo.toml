@@ -1,0 +1,51 @@
+[package]
+name = "cv-import-signal"
+version = "0.0.0"
+description = "Reader for Signal on-device backups (M1 feasibility spike)"
+# Vendors Signal's AGPL-3.0-only protobuf schemas, see docs/adr/0001-license.md.
+license = "AGPL-3.0-only"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+# Writes synthetic encrypted backups (used by tools/fixture-gen and tests).
+writer = ["dep:rand"]
+# The spike command-line tool.
+cli = ["dep:clap", "dep:rpassword"]
+
+[[bin]]
+name = "signal-spike"
+required-features = ["cli"]
+
+[[test]]
+name = "synthetic_backup"
+required-features = ["writer"]
+
+[dependencies]
+aes = "0.8"
+cbc = { version = "0.1", features = ["std"] }
+ctr = "0.9"
+flate2 = "1"
+hex = "0.4"
+hkdf = "0.12"
+hmac = "0.12"
+prost = "0.14"
+sha2 = "0.10"
+subtle = "2"
+thiserror = "2"
+zeroize = { version = "1", features = ["derive"] }
+rand = { version = "0.9", optional = true }
+clap = { version = "4", features = ["derive"], optional = true }
+rpassword = { version = "7", optional = true }
+
+[build-dependencies]
+prost-build = "0.14"
+protox = "0.10"
+
+[dev-dependencies]
+rand = "0.9"
+tempfile = "3"
+
+[lints]
+workspace = true

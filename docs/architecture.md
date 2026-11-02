@@ -84,8 +84,7 @@ its first two hex characters. Source: `MediaName.forLocalBackupFilename`.
 | BackupId | BackupKey | none | `"20241024_SIGNAL_BACKUP_ID:"` ‖ ACI service-id binary | 16 B* |
 | MessageBackupKey (local) | BackupKey | none | `"20241007_SIGNAL_BACKUP_ENCRYPT_MESSAGE_BACKUP:"` ‖ BackupId | 64 B → HMAC key (32) ‖ AES key (32) |
 
-\* BackupId length is taken from libsignal's `BackupId::LEN`. The spike
-must confirm it.
+\* BackupId length: 16 bytes, confirmed in M1 (ADR 0005).
 
 Problem: the BackupId depends on the account's ACI (a UUID), which the user
 does not know. **The local `metadata` file solves this:** it holds the
@@ -410,30 +409,35 @@ struct Message {
     edits: Vec<Edit>,             // previous versions (Signal) or flag-only (WhatsApp)
     flags: MessageFlags,          // forwarded, view_once, expiring, deleted, starred …
     delivery: Option<DeliveryInfo>,
-    extra: SourceExtra,           // namespaced, opaque key/values for lossless round-trip
+    extra: SourceExtra,           // raw source record (Signal: frame protobuf) + namespaced extras; ADR 0006
 }
 
 enum Content {
     Text(RichText),                              // text + ranges (bold, italic, strike, mono, spoiler, mention, link)
     Media { attachments: Vec<Attachment>, caption: Option<RichText> },
-    Sticker(Attachment), Contact(ContactCard), Location(Location),
+    Sticker { emoji: Option<String>, pack_id: Option<Vec<u8>>, sticker_id: Option<u32>, image: Attachment },
+    Contact(ContactCard), Location(Location),
     Poll(Poll), Call(CallEvent), Payment(PaymentStub), GiftBadge(Stub),
     System(SystemEvent),                          // typed kind + actors + fallback text
     Deleted { by: Option<ParticipantId> },
-    Unsupported { source_kind: String, note: String }, // visible placeholder, never silently dropped
+    Unsupported { source_kind: String, note: String }, // visible placeholder, never silently dropped; raw data in `extra`
 }
 
 struct Attachment { id: AttachmentId, kind: MediaKind /* Image|Video|Audio|Voice|Gif|Document|Sticker */,
                     mime: Option<String>, file_name: Option<String>, size: Option<u64>,
                     width: Option<u32>, height: Option<u32>, duration_ms: Option<u64>,
                     waveform: Option<Vec<u8>>, blurhash: Option<String>,
-                    availability: Available(BlobRef) | Omitted | Missing | NotInBackup }
+                    availability: Available { blob: BlobRef, integrity: Verified | AuthenticatedOnly }
+                                  | Omitted | Missing | NotInBackup }
 
 struct Quote { target: Option<MessageId>, author: Option<ParticipantId>, snippet: RichText,
                attachment_hint: Option<MediaKind>, target_not_found: bool }
 struct Reaction { emoji: String, author: ParticipantId, timestamp: Option<Timestamp> }
 struct SystemEvent { kind: SystemKind, actors: Vec<ParticipantId>, text: String }
 ```
+
+Lossless import rules, including the fallbacks (e.g. sticker emoji when
+the image is missing), are in ADR 0006.
 
 `Timestamp` keeps the distinction between WhatsApp's naive local time and
 Signal's UTC epoch. The UI shows naive times as-is, without a zone

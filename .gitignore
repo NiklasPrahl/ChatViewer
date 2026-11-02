@@ -32,3 +32,6 @@ ChatStorage.sqlite*
 # Exports produced while testing locally
 /out/
 /exports/
+
+# CI build of libsignal validator (never committed)
+/libsignal-validator

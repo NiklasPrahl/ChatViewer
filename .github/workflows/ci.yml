@@ -71,6 +71,35 @@ jobs:
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - run: cargo test --workspace --all-features
 
+  signal-crosscheck:
+    name: Signal backups vs. libsignal validator
+    needs: detect
+    if: needs.detect.outputs.has_crates == 'true'
+    runs-on: ubuntu-latest
+    env:
+      # libsignal is AGPL-3.0; it is built and run here only, never shipped.
+      LIBSIGNAL_TAG: v0.106.1
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Restore validator
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: libsignal-validator
+          key: libsignal-validator-${{ env.LIBSIGNAL_TAG }}-${{ runner.os }}
+      - name: Build libsignal validator
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "$LIBSIGNAL_TAG" https://github.com/signalapp/libsignal.git "$RUNNER_TEMP/libsignal"
+          cd "$RUNNER_TEMP/libsignal"
+          cargo build --release -p libsignal-message-backup --features cli,test-util --bin validator
+          cp target/release/validator "$GITHUB_WORKSPACE/libsignal-validator"
+      - name: Cross-check
+        run: sh tools/ci/signal-crosscheck.sh ./libsignal-validator
+
   deny:
     name: cargo-deny
     needs: detect
