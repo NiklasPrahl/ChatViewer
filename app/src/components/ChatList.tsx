@@ -1,7 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useMemo, useRef, useState } from "react";
 
-import { formatShortDate } from "../format";
+import { LOCALE, formatShortDate } from "../format";
 import type { ChatSummary } from "../types";
 
 const KIND_ICON: Record<ChatSummary["kind"], string> = {
@@ -31,7 +31,7 @@ export function ChatList({ chats, selected, onSelect }: {
       <input
         className="search"
         type="search"
-        placeholder={`Search ${chats.length.toLocaleString()} chats`}
+        placeholder={`Search ${chats.length.toLocaleString(LOCALE)} chats`}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         aria-label="Search chats"
@@ -52,7 +52,7 @@ export function ChatList({ chats, selected, onSelect }: {
                 <span className="chat-text">
                   <span className="chat-title">{c.title}</span>
                   <span className="chat-meta">
-                    {c.messages.toLocaleString()} messages · {formatShortDate(c.last)}
+                    {c.messages.toLocaleString(LOCALE)} messages · {formatShortDate(c.last)}
                   </span>
                 </span>
               </button>

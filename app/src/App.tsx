@@ -6,6 +6,7 @@ import { AboutDialog, ErrorDialog, InfoPanel, KeyDialog } from "./components/Dia
 import { ExportChats } from "./components/ExportChats";
 import { MessageList } from "./components/MessageList";
 import type { ChatInfo, OpenResult, Theme } from "./types";
+import { LOCALE } from "./format";
 
 interface Opened extends OpenResult {
   path: string;
@@ -145,7 +146,7 @@ export function App() {
                 <div className="chat-header">
                   <h2>{chat.conversation.title}</h2>
                   <span className="muted small">
-                    {chat.message_count.toLocaleString()} messages · {chat.participants.length} participants
+                    {chat.message_count.toLocaleString(LOCALE)} messages · {chat.participants.length} participants
                   </span>
                 </div>
                 <MessageList key={`${opened.handle}-${chat.conversation.id}`} api={api} handle={opened.handle} chat={chat} onError={onError} />

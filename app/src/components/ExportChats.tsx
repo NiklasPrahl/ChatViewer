@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Api } from "../api";
 import { errorMessage } from "../api";
-import { formatShortDate } from "../format";
+import { LOCALE, formatShortDate } from "../format";
 import type { BatchExportResult, ChatSummary, ExportFormat, ExportProgress } from "../types";
 
 const FORMATS: { id: ExportFormat; name: string; description: string }[] = [
@@ -88,9 +88,9 @@ export function ExportChats({ api, handle, chats, initial, onClose }: Props) {
       {result ? (
         <>
           <p className="status">
-            {result.exported.length.toLocaleString()} {result.exported.length === 1 ? "file" : "files"} written to{" "}
+            {result.exported.length.toLocaleString(LOCALE)} {result.exported.length === 1 ? "file" : "files"} written to{" "}
             <code>{result.folder}</code>
-            {format === "cva" && `, with ${result.exported.reduce((n, f) => n + f.media_written, 0).toLocaleString()} media files`}.
+            {format === "cva" && `, with ${result.exported.reduce((n, f) => n + f.media_written, 0).toLocaleString(LOCALE)} media files`}.
           </p>
           {result.exported.some((f) => f.media_failed > 0) && (
             <p className="muted small">Some media could not be read and are marked as missing in the archives.</p>
@@ -127,7 +127,7 @@ export function ExportChats({ api, handle, chats, initial, onClose }: Props) {
                     <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggle(c.id)} disabled={running} />
                     <span className="chat-text">
                       <span className="chat-title">{c.title}</span>
-                      <span className="chat-meta">{c.messages.toLocaleString()} messages · {formatShortDate(c.last)}</span>
+                      <span className="chat-meta">{c.messages.toLocaleString(LOCALE)} messages · {formatShortDate(c.last)}</span>
                     </span>
                   </label>
                 ))}
@@ -148,12 +148,12 @@ export function ExportChats({ api, handle, chats, initial, onClose }: Props) {
           {running && progress && (
             <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={progress.total} aria-valuenow={progress.done}>
               <div className="progress-bar" style={{ width: `${(progress.done / Math.max(1, progress.total)) * 100}%` }} />
-              <span>Exporting {progress.done.toLocaleString()} of {progress.total.toLocaleString()} chats…</span>
+              <span>Exporting {progress.done.toLocaleString(LOCALE)} of {progress.total.toLocaleString(LOCALE)} chats…</span>
             </div>
           )}
           {error && <p className="error-text">{error}</p>}
           <p className="muted small selection-note">
-            {selected.size.toLocaleString()} chats selected ({messages.toLocaleString()} messages). Each becomes its own file.
+            {selected.size.toLocaleString(LOCALE)} chats selected ({messages.toLocaleString(LOCALE)} messages). Each becomes its own file.
           </p>
           <div className="buttons">
             <button onClick={onClose} disabled={running}>Cancel</button>

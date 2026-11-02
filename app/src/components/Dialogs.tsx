@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 
 import type { SourceReport } from "../types";
+import { LOCALE } from "../format";
 
 function Modal({ title, onClose, children, wide }: {
   title: string;
@@ -136,7 +137,7 @@ export function InfoPanel({ report, importer, onClose, onReopen }: {
           <h3>Counts</h3>
           <dl className="facts counters">
             {Object.entries(report.counters).map(([k, v]) => (
-              <Fragment key={k}><dt>{k.replace(/_/g, " ")}</dt><dd>{v.toLocaleString()}</dd></Fragment>
+              <Fragment key={k}><dt>{k.replace(/_/g, " ")}</dt><dd>{v.toLocaleString(LOCALE)}</dd></Fragment>
             ))}
           </dl>
         </section>
