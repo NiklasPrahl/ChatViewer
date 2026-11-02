@@ -1,0 +1,17 @@
+[package]
+name = "fixture-gen"
+version = "0.0.0"
+description = "Generates synthetic test data (never real chats)"
+# Depends on the AGPL-3.0-only Signal writer, see docs/adr/0001-license.md.
+license = "AGPL-3.0-only"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+cv-import-signal = { path = "../../crates/cv-import-signal", features = ["writer"] }
+rand = "0.9"
+
+[lints]
+workspace = true

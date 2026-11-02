@@ -1,7 +1,8 @@
 # ChatViewer
 
-> **Status: pre-alpha.** Repository foundation only (milestone M0).
-> There is no application code yet. See [docs/plan.md](docs/plan.md).
+> **Status: pre-alpha.** Milestone M1: Signal decryption feasibility
+> spike (command line only, no GUI yet). See [docs/plan.md](docs/plan.md)
+> and [ADR 0005](docs/adr/0005-signal-backup-decoding.md).
 
 A cross-platform desktop viewer (Windows, macOS, Linux) for exported chat
 archives. It renders chats like a messenger and exports them to TXT,

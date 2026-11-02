@@ -1,6 +1,6 @@
 # 0001 – License: MIT repository, AGPL-3.0 Signal importer
 
-- Status: Accepted (final confirmation after the M1 spike)
+- Status: Accepted (confirmed by the M1 spike, see ADR 0005)
 - Date: 2026-11-02
 
 ## Context

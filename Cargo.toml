@@ -1,9 +1,7 @@
 [workspace]
 resolver = "3"
-# Crates are added from milestone M2 on (see docs/architecture.md §5).
-# Cargo rejects a workspace without members, so CI skips Rust jobs until
-# the first crate exists.
-members = ["crates/*"]
+# Layout: docs/architecture.md §5.
+members = ["crates/*", "tools/fixture-gen"]
 
 [workspace.package]
 edition = "2024"
