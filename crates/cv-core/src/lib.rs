@@ -7,7 +7,9 @@
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use cv_model::{BlobRef, ConversationData, ConversationId, SourceReport};
+use cv_model::{
+    BlobRef, ConversationData, ConversationId, ConversationKind, SourceReport, Timestamp,
+};
 
 pub mod logging;
 
@@ -60,6 +62,27 @@ pub enum Probe {
     Maybe(u8),
 }
 
+/// A secret such as a backup recovery key. Zeroized on drop, never
+/// printed (ADR 0003).
+#[derive(Clone)]
+pub struct Secret(zeroize::Zeroizing<String>);
+
+impl Secret {
+    pub fn new(value: String) -> Self {
+        Self(zeroize::Zeroizing::new(value))
+    }
+
+    pub fn expose(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Debug for Secret {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Secret(<redacted>)")
+    }
+}
+
 /// User choices that override detection (e.g. date order).
 #[derive(Debug, Clone, Default)]
 pub struct ImportOptions {
@@ -67,6 +90,8 @@ pub struct ImportOptions {
     pub overrides: Vec<(String, String)>,
     /// Display name of the archive owner, if the source does not say.
     pub self_name: Option<String>,
+    /// Secret the importer asked for via [`Importer::secret_prompt`].
+    pub secret: Option<Secret>,
 }
 
 impl ImportOptions {
@@ -83,7 +108,24 @@ pub trait Importer: Send + Sync {
     /// Stable id, e.g. `"whatsapp"`.
     fn id(&self) -> &'static str;
     fn probe(&self, input: &InputSource) -> Probe;
+    /// What to ask the user for before [`Importer::open`], if anything
+    /// (e.g. `"recovery key"`). Front ends pass it in [`ImportOptions::secret`].
+    fn secret_prompt(&self) -> Option<&'static str> {
+        None
+    }
     fn open(&self, input: &InputSource, options: &ImportOptions) -> Result<Box<dyn ChatArchive>>;
+}
+
+/// Overview of one chat, cheap to compute (for chat lists).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChatSummary {
+    pub id: ConversationId,
+    pub title: String,
+    pub kind: ConversationKind,
+    pub participants: usize,
+    pub messages: u64,
+    pub first: Option<Timestamp>,
+    pub last: Option<Timestamp>,
 }
 
 /// An opened archive. Implementations load lazily where they can.
@@ -91,6 +133,28 @@ pub trait ChatArchive {
     fn report(&self) -> &SourceReport;
     fn conversation_ids(&self) -> Vec<ConversationId>;
     fn load(&self, id: &ConversationId) -> Result<ConversationData>;
+    /// Chat overview. The default loads the chat; archives with an index
+    /// should override it.
+    fn summary(&self, id: &ConversationId) -> Result<ChatSummary> {
+        let data = self.load(id)?;
+        Ok(ChatSummary {
+            id: id.clone(),
+            title: data.conversation.title,
+            kind: data.conversation.kind,
+            participants: data.participants.len(),
+            messages: data.messages.len() as u64,
+            first: data.messages.first().map(|m| m.timestamp),
+            last: data.messages.last().map(|m| m.timestamp),
+        })
+    }
+    /// All chats. The default loads them one by one; archives that can
+    /// decode everything in one pass should override it.
+    fn load_all(&self) -> Result<Vec<ConversationData>> {
+        self.conversation_ids()
+            .iter()
+            .map(|id| self.load(id))
+            .collect()
+    }
     /// Opens an attachment's bytes. Never writes to disk (ADR 0003).
     fn open_blob(&self, blob: &BlobRef) -> Result<Box<dyn Read + '_>>;
 }
@@ -157,7 +221,9 @@ mod tests {
         let options = ImportOptions {
             overrides: vec![("k".into(), "1".into()), ("k".into(), "2".into())],
             self_name: None,
+            secret: Some(Secret::new("hidden".into())),
         };
+        assert!(!format!("{options:?}").contains("hidden"));
         assert_eq!(options.get("k"), Some("2"));
         assert_eq!(options.get("x"), None);
     }

@@ -9,9 +9,11 @@
 
 pub mod crypto;
 pub mod error;
+pub mod import;
 pub mod key;
 pub mod layout;
 pub mod main_file;
+mod mapping;
 pub mod media;
 pub mod metadata;
 pub mod walk;
@@ -19,6 +21,7 @@ pub mod walk;
 pub mod writer;
 
 pub use error::{Error, Result};
+pub use import::{SignalArchive, SignalImporter};
 
 /// Code generated from Signal's vendored protobuf schemas.
 #[allow(clippy::all, clippy::pedantic)]

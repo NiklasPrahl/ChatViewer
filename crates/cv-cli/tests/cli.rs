@@ -99,3 +99,90 @@ fn clear_errors_for_bad_input() {
     let out = chatviewer(&["export", zip.to_str().unwrap(), "--format", "pdf"]);
     assert!(String::from_utf8_lossy(&out.stderr).contains("unknown format"));
 }
+
+fn chatviewer_with_stdin(args: &[&str], stdin: &str) -> Output {
+    use std::io::Write;
+    let mut child = Command::new(env!("CARGO_BIN_EXE_chatviewer"))
+        .args(args)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("binary runs");
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(stdin.as_bytes())
+        .unwrap();
+    child.wait_with_output().unwrap()
+}
+
+#[test]
+fn signal_backup_to_cva_and_back() {
+    use cv_import_signal::writer::synth::{self as signal_synth, SynthOptions};
+    use rand::SeedableRng;
+
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("SignalBackups");
+    let b = signal_synth::generate(&SynthOptions::default());
+    let key: cv_import_signal::key::RecoveryKey = b.recovery_key.parse().unwrap();
+    let mut rng = rand::rngs::StdRng::seed_from_u64(1);
+    cv_import_signal::writer::write_local_backup(
+        &root, &key, &b.aci, &b.info, b.frames, &b.media, &mut rng,
+    )
+    .unwrap();
+    let root_s = root.to_str().unwrap();
+
+    // Without a key on a non-terminal stdin: clear error.
+    let out = chatviewer_with_stdin(&["info", root_s], "");
+    assert!(!out.status.success());
+
+    let out = chatviewer_with_stdin(&["info", root_s, "--recovery-key-stdin"], &b.recovery_key);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert!(stdout.contains("source:       signal"), "{stdout}");
+    assert!(!stdout.contains(&b.recovery_key));
+    let chat = stdout
+        .lines()
+        .find(|l| l.contains("Group"))
+        .and_then(|l| l.split_whitespace().next())
+        .expect("group chat listed")
+        .to_owned();
+
+    let zip = dir.path().join("group.zip");
+    let zip_s = zip.to_str().unwrap();
+    let args = [
+        "export",
+        root_s,
+        "--recovery-key-stdin",
+        "--chat",
+        &chat,
+        "--format",
+        "cva",
+        "-o",
+        zip_s,
+    ];
+    let out = chatviewer_with_stdin(&args, &b.recovery_key);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(String::from_utf8_lossy(&out.stderr).contains("media files"));
+
+    // The archive reopens without a key, as a ChatViewer archive.
+    let out = chatviewer(&["info", zip_s]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert!(stdout.contains("source:       signal"), "{stdout}");
+    assert!(stdout.contains("Synthetic Group"));
+}

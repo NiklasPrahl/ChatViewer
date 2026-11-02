@@ -3,14 +3,14 @@
 //! Uses the same core as the GUI. Reads archives in place and writes only
 //! the export file the user asks for (ADR 0003).
 
-use std::fs::OpenOptions;
-use std::io::{self, BufWriter, Write};
+use std::fs::{File, OpenOptions};
+use std::io::{self, BufRead, BufWriter, IsTerminal, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Args, Parser, Subcommand};
-use cv_core::{ChatArchive, ImportOptions, Importer, InputSource, probe_all};
-use cv_model::{ConversationData, Timestamp};
+use cv_core::{ChatArchive, ImportOptions, Importer, InputSource, Secret, probe_all};
+use cv_model::Timestamp;
 
 #[derive(Parser)]
 #[command(
@@ -35,15 +35,19 @@ enum Command {
         /// Hide chat titles and names (for sharing the output).
         #[arg(long)]
         anonymous: bool,
+        /// Also count message types, media and quotes over all chats
+        /// (aggregated numbers only, no content).
+        #[arg(long)]
+        stats: bool,
     },
-    /// Export one chat to txt, md or json.
+    /// Export one chat to txt, md, json or cva (ZIP with media).
     Export {
         #[command(flatten)]
         input: InputArgs,
-        /// Output format: txt, md or json.
+        /// Output format: txt, md, json or cva.
         #[arg(short, long)]
         format: String,
-        /// Output file; `-` or omitted for stdout.
+        /// Output file; `-` or omitted for stdout (not for cva).
         #[arg(short, long)]
         output: Option<PathBuf>,
         /// Overwrite an existing output file.
@@ -57,8 +61,13 @@ enum Command {
 
 #[derive(Args)]
 struct InputArgs {
-    /// Chat archive: WhatsApp .zip/.txt or extracted folder.
+    /// WhatsApp export (.zip, .txt or folder), Signal backup folder, or
+    /// ChatViewer archive (.zip).
     input: PathBuf,
+    /// Read a required secret (Signal recovery key) from stdin instead of
+    /// a hidden prompt. Never pass keys as arguments.
+    #[arg(long)]
+    recovery_key_stdin: bool,
     /// Date order of the source, if detection guesses wrong: dmy, mdy or ymd.
     #[arg(long)]
     date_order: Option<String>,
@@ -68,7 +77,28 @@ struct InputArgs {
 }
 
 fn importers() -> Vec<Box<dyn Importer>> {
-    vec![Box::new(cv_import_whatsapp::WhatsAppImporter)]
+    vec![
+        Box::new(cv_cva::CvaImporter),
+        Box::new(cv_import_whatsapp::WhatsAppImporter),
+        #[cfg(feature = "signal")]
+        Box::new(cv_import_signal::SignalImporter),
+    ]
+}
+
+fn read_secret(prompt: &str, from_stdin: bool) -> Result<Secret, Box<dyn std::error::Error>> {
+    if from_stdin {
+        let mut line = String::new();
+        io::stdin().lock().read_line(&mut line)?;
+        let secret = Secret::new(line.trim().to_owned());
+        line.clear();
+        return Ok(secret);
+    }
+    if !io::stdin().is_terminal() {
+        return Err(format!("this input needs a {prompt}; pass --recovery-key-stdin").into());
+    }
+    Ok(Secret::new(rpassword::prompt_password(format!(
+        "{prompt} (input hidden): "
+    ))?))
 }
 
 fn main() -> ExitCode {
@@ -98,12 +128,26 @@ fn open(args: &InputArgs) -> Result<Box<dyn ChatArchive>, Box<dyn std::error::Er
     if let Some(order) = &args.date_order {
         options.overrides.push(("date_order".into(), order.clone()));
     }
+    if let Some(prompt) = importer.secret_prompt() {
+        options.secret = Some(read_secret(prompt, args.recovery_key_stdin)?);
+    }
     Ok(importer.open(&input, &options)?)
 }
 
 fn run(command: Command) -> Result<(), Box<dyn std::error::Error>> {
     match command {
-        Command::Info { input, anonymous } => info(&*open(&input)?, anonymous),
+        Command::Info {
+            input,
+            anonymous,
+            stats,
+        } => {
+            let archive = open(&input)?;
+            info(&*archive, anonymous)?;
+            if stats {
+                print_stats(&*archive)?;
+            }
+            Ok(())
+        }
         Command::Export {
             input,
             format,
@@ -111,8 +155,14 @@ fn run(command: Command) -> Result<(), Box<dyn std::error::Error>> {
             force,
             chat,
         } => {
-            let exporter = cv_export::by_name(&format)
-                .ok_or_else(|| format!("unknown format {format:?} (use txt, md or json)"))?;
+            let cva = matches!(format.to_ascii_lowercase().as_str(), "cva" | "zip");
+            let exporter = cv_export::by_name(&format);
+            if exporter.is_none() && !cva {
+                return Err(format!("unknown format {format:?} (use txt, md, json or cva)").into());
+            }
+            if cva && output.as_deref().is_none_or(|p| p == Path::new("-")) {
+                return Err("cva export needs an output file (-o chat.zip)".into());
+            }
             let archive = open(&input)?;
             let ids = archive.conversation_ids();
             let id = match chat {
@@ -123,26 +173,26 @@ fn run(command: Command) -> Result<(), Box<dyn std::error::Error>> {
                 None if ids.len() == 1 => ids.into_iter().next().expect("one id"),
                 None => return Err("this archive has several chats; choose one with --chat".into()),
             };
+            if cva {
+                let path = output.as_deref().expect("checked above");
+                let summary = cv_cva::write(&*archive, &id, create(path, force)?)?;
+                eprintln!(
+                    "wrote {} messages and {} media files{}",
+                    summary.messages,
+                    summary.media_written,
+                    match summary.media_failed {
+                        0 => String::new(),
+                        n => format!("; {n} media files could not be read and are marked missing"),
+                    }
+                );
+                return Ok(());
+            }
+            let exporter = exporter.expect("checked above");
             let data = archive.load(&id)?;
             let mut out: Box<dyn Write> = match output.as_deref() {
                 None => Box::new(io::stdout().lock()),
                 Some(p) if p == Path::new("-") => Box::new(io::stdout().lock()),
-                Some(path) => {
-                    let mut file = OpenOptions::new();
-                    file.write(true);
-                    if force {
-                        file.create(true).truncate(true);
-                    } else {
-                        file.create_new(true);
-                    }
-                    let file = file.open(path).map_err(|e| match e.kind() {
-                        io::ErrorKind::AlreadyExists => {
-                            format!("{} exists; use --force to overwrite", path.display())
-                        }
-                        _ => e.to_string(),
-                    })?;
-                    Box::new(BufWriter::new(file))
-                }
+                Some(path) => Box::new(BufWriter::new(create(path, force)?)),
             };
             exporter.export(&data, archive.report(), &mut out)?;
             out.flush()?;
@@ -155,6 +205,23 @@ fn run(command: Command) -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
     }
+}
+
+/// Creates the output file; never overwrites without `--force`.
+fn create(path: &Path, force: bool) -> Result<File, String> {
+    let mut file = OpenOptions::new();
+    file.write(true);
+    if force {
+        file.create(true).truncate(true);
+    } else {
+        file.create_new(true);
+    }
+    file.open(path).map_err(|e| match e.kind() {
+        io::ErrorKind::AlreadyExists => {
+            format!("{} exists; use --force to overwrite", path.display())
+        }
+        _ => e.to_string(),
+    })
 }
 
 fn info(archive: &dyn ChatArchive, anonymous: bool) -> Result<(), Box<dyn std::error::Error>> {
@@ -175,18 +242,19 @@ fn info(archive: &dyn ChatArchive, anonymous: bool) -> Result<(), Box<dyn std::e
     }
     println!("chats:");
     for (i, id) in archive.conversation_ids().iter().enumerate() {
-        let data = archive.load(id)?;
+        let s = archive.summary(id)?;
         let title = if anonymous {
             format!("Chat {}", i + 1)
         } else {
-            data.conversation.title.clone()
+            s.title.clone()
         };
-        let range = date_range(&data);
+        let range = match (s.first, s.last) {
+            (Some(first), Some(last)) => format!("{} to {}", day(&first), day(&last)),
+            _ => String::new(),
+        };
         println!(
             "  {id}  {title:?}  {:?}  {} participants  {} messages  {range}",
-            data.conversation.kind,
-            data.participants.len(),
-            data.messages.len(),
+            s.kind, s.participants, s.messages,
         );
     }
     Ok(())
@@ -203,15 +271,92 @@ fn print_list(label: &str, items: &[String]) {
     }
 }
 
-fn date_range(data: &ConversationData) -> String {
-    let day = |t: &Timestamp| match t {
+fn day(t: &Timestamp) -> String {
+    match t {
         Timestamp::NaiveLocal(t) => t.format("%Y-%m-%d").to_string(),
-        Timestamp::UtcMillis(ms) => format!("{ms} ms UTC"),
-    };
-    match (data.messages.first(), data.messages.last()) {
-        (Some(first), Some(last)) => {
-            format!("{} to {}", day(&first.timestamp), day(&last.timestamp))
-        }
-        _ => String::new(),
+        Timestamp::UtcMillis(ms) => chrono::DateTime::from_timestamp_millis(*ms)
+            .map(|t| t.format("%Y-%m-%d").to_string())
+            .unwrap_or_default(),
     }
+}
+
+/// Content-free statistics over all chats.
+fn print_stats(archive: &dyn ChatArchive) -> Result<(), Box<dyn std::error::Error>> {
+    use std::collections::BTreeMap;
+
+    use cv_model::{Availability, Content};
+
+    let mut counts: BTreeMap<String, u64> = BTreeMap::new();
+    let mut add = |k: String| *counts.entry(k).or_default() += 1;
+    for data in archive.load_all()? {
+        for m in &data.messages {
+            let attachments: Vec<&cv_model::Attachment> = match &m.content {
+                Content::Text(_) => {
+                    add("content text".into());
+                    vec![]
+                }
+                Content::Media { attachments, .. } => {
+                    add("content media".into());
+                    attachments.iter().collect()
+                }
+                Content::Sticker { image, emoji, .. } => {
+                    add("content sticker".into());
+                    if emoji.is_some() {
+                        add("sticker with emoji".into());
+                    }
+                    vec![image]
+                }
+                Content::Location(_) => {
+                    add("content location".into());
+                    vec![]
+                }
+                Content::Poll(_) => {
+                    add("content poll".into());
+                    vec![]
+                }
+                Content::System(e) => {
+                    add(format!("system {:?}", e.kind));
+                    vec![]
+                }
+                Content::Deleted { .. } => {
+                    add("content deleted".into());
+                    vec![]
+                }
+                Content::Unsupported { source_kind, .. } => {
+                    add(format!("unsupported {source_kind}"));
+                    vec![]
+                }
+            };
+            for a in attachments {
+                let status = match &a.availability {
+                    Availability::Available { .. } => "available",
+                    Availability::Omitted => "omitted",
+                    Availability::Missing => "missing",
+                    Availability::NotInBackup => "not in backup",
+                };
+                add(format!("media {:?} {status}", a.kind));
+            }
+            if let Some(q) = &m.quote {
+                add(if q.target.is_some() {
+                    "quote resolved".into()
+                } else {
+                    "quote unresolved".into()
+                });
+            }
+            for _ in &m.reactions {
+                add("reaction".into());
+            }
+            if m.flags.edited {
+                add("edited".into());
+            }
+            if m.flags.view_once {
+                add("view once".into());
+            }
+        }
+    }
+    println!("statistics:");
+    for (k, v) in &counts {
+        println!("  {k:<36} {v}");
+    }
+    Ok(())
 }

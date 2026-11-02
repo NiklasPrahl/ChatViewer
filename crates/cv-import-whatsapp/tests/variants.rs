@@ -258,6 +258,7 @@ fn date_order_override_wins() {
     let options = ImportOptions {
         overrides: vec![("date_order".into(), "mdy".into())],
         self_name: Some("Bob Sample".into()),
+        secret: None,
     };
     let archive = import(&path, &options);
     assert!(archive.report().variant.contains("-mdy-"));

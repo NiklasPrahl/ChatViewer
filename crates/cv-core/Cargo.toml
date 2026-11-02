@@ -11,6 +11,7 @@ publish.workspace = true
 cv-model = { path = "../cv-model" }
 log = { version = "0.4", features = ["std"] }
 thiserror = "2"
+zeroize = "1"
 
 [lints]
 workspace = true

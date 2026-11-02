@@ -74,6 +74,11 @@ impl MainReader {
         self.frame_buf.len()
     }
 
+    /// Encoded bytes of the frame returned last (kept as raw record, ADR 0006).
+    pub fn last_frame_bytes(&self) -> &[u8] {
+        &self.frame_buf
+    }
+
     /// Next frame, or `None` at the end of the backup.
     pub fn next_frame(&mut self) -> Result<Option<Frame>> {
         if !read_delimited(&mut self.plaintext, &mut self.frame_buf)? {
