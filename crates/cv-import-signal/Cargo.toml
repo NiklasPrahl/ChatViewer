@@ -27,20 +27,20 @@ name = "import_to_cva"
 required-features = ["writer"]
 
 [dependencies]
-aes = "0.8"
+aes = "0.9"
 base64 = "0.23"
 cv-core = { path = "../cv-core" }
 cv-model = { path = "../cv-model" }
 log = "0.4"
 serde_json = "1"
-cbc = { version = "0.1", features = ["std"] }
-ctr = "0.9"
+cbc = { version = "0.2", features = ["alloc"] }
+ctr = "0.10"
 flate2 = "1"
 hex = "0.4"
-hkdf = "0.12"
-hmac = "0.12"
+hkdf = "0.13"
+hmac = "0.13"
 prost = "0.14"
-sha2 = "0.10"
+sha2 = "0.11"
 subtle = "2"
 thiserror = "2"
 zeroize = { version = "1", features = ["derive"] }
