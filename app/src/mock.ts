@@ -24,14 +24,24 @@ function sentence(r: () => number, n = 3 + Math.floor(r() * 14)): string {
   return w.join(" ") + ".";
 }
 
-const svg = (w: number, h: number, hue: number, label: string): string =>
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
-      `<rect width="100%" height="100%" fill="hsl(${hue},55%,60%)"/>` +
-      `<text x="50%" y="50%" font-family="sans-serif" font-size="${Math.round(h / 8)}" ` +
-      `fill="white" text-anchor="middle" dominant-baseline="middle">${label}</text></svg>`,
-  );
+/** A simple drawn landscape as a stand-in photo (synthetic, no real image). */
+const svg = (w: number, h: number, hue: number, label: string): string => {
+  const sky = `hsl(${hue},70%,72%)`;
+  const far = `hsl(${(hue + 40) % 360},28%,52%)`;
+  const near = `hsl(${(hue + 90) % 360},35%,34%)`;
+  const body = label === "sticker"
+    ? `<circle cx="80" cy="80" r="70" fill="hsl(${hue},80%,62%)"/>` +
+      `<circle cx="58" cy="66" r="9" fill="#222"/><circle cx="102" cy="66" r="9" fill="#222"/>` +
+      `<path d="M48 98 Q80 128 112 98" stroke="#222" stroke-width="8" fill="none" stroke-linecap="round"/>`
+    : `<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky}"/>` +
+      `<stop offset="1" stop-color="hsl(${(hue + 30) % 360},80%,88%)"/></linearGradient></defs>` +
+      `<rect width="100%" height="100%" fill="url(#s)"/>` +
+      `<circle cx="${w * 0.72}" cy="${h * 0.3}" r="${h * 0.09}" fill="hsl(45,100%,92%)"/>` +
+      `<path d="M0 ${h * 0.7} L${w * 0.28} ${h * 0.38} L${w * 0.5} ${h * 0.62} L${w * 0.7} ${h * 0.42} L${w} ${h * 0.68} L${w} ${h} L0 ${h}Z" fill="${far}"/>` +
+      `<path d="M0 ${h * 0.86} Q${w * 0.3} ${h * 0.7} ${w * 0.6} ${h * 0.84} T${w} ${h * 0.8} L${w} ${h} L0 ${h}Z" fill="${near}"/>`;
+  return "data:image/svg+xml;utf8," +
+    encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">${body}</svg>`);
+};
 
 const people: Participant[] = [
   { id: "p1", display_name: "Alice Example", is_self: "yes" },
@@ -60,7 +70,8 @@ function image(n: number, available = true): Attachment {
 function message(chat: string, i: number, members: Participant[], showcase: boolean): Message {
   const r = rng(i * 7919 + chat.length);
   const author = members[Math.floor(r() * members.length)];
-  const ts = { kind: "utc_millis" as const, value: START + i * 47 * 60_000 };
+  const step = chat === "c3" ? 4 * 60_000 : 47 * 60_000;
+  const ts = { kind: "utc_millis" as const, value: START + i * step };
   let content: Content = { type: "text", text: sentence(r) };
   const extra: Partial<Message> = {};
   const roll = showcase ? i % 24 : Math.floor(r() * 40);
@@ -177,9 +188,23 @@ const chats: MockChat[] = [
     showcase: false,
   },
 ];
+// Extra fictional chats so README screenshots show a realistic list.
+const EXTRA = ["Erin Placeholder", "Frank Demo", "Book Club", "Grace Example", "Family", "Heidi Sample"];
+EXTRA.forEach((title, i) => {
+  const group = title === "Book Club" || title === "Family";
+  chats.push({
+    summary: { id: `x${i}`, title, kind: group ? "group" : "direct", participants: group ? 4 : 2, messages: 300 + i * 137 },
+    members: group ? people : [people[0], people[(i % 3) + 1]],
+    showcase: false,
+  });
+});
+chats[0].summary.title = "Weekend Trip";
+chats[2].summary.title = "Carol Test";
+
 for (const c of chats) {
   c.summary.first = { kind: "utc_millis", value: START };
-  c.summary.last = { kind: "utc_millis", value: START + (c.summary.messages - 1) * 47 * 60_000 };
+  const step = c.summary.id === "c3" ? 4 * 60_000 : 47 * 60_000;
+  c.summary.last = { kind: "utc_millis", value: START + (c.summary.messages - 1) * step };
 }
 
 const report: SourceReport = {
@@ -188,9 +213,12 @@ const report: SourceReport = {
   variant: "signal-local-backup-v1-metadata-v1",
   source_version: "Desktop 8.33.0 (backup format 1, metadata 1)",
   confidence: 100,
-  warnings: ["This is synthetic demo data (browser preview without the desktop backend)."],
+  // `?readme` hides the notice for documentation screenshots.
+  warnings: new URLSearchParams(location.search).has("readme")
+    ? []
+    : ["This is synthetic demo data (browser preview without the desktop backend)."],
   limitations: ["media that were not on the device when the backup was made are not included"],
-  counters: { chats: 3, chat_items: 100_600 },
+  counters: { chats: 9, chat_items: 104_000 },
 };
 
 const delay = <T,>(value: T, ms = 120): Promise<T> =>
@@ -209,7 +237,8 @@ export function mockApi(): Api {
       if (request.secret !== undefined && request.secret.replace(/[\s-]/g, "").length !== 64) {
         throw { message: "invalid recovery key: fewer than 64 characters" };
       }
-      return delay({ handle: 1, importer: "signal-local", report, chats: chats.map((c) => c.summary) }, 400);
+      const sorted = [...chats].sort((a, b) => (b.summary.last?.value as number) - (a.summary.last?.value as number));
+      return delay({ handle: 1, importer: "signal-local", report, chats: sorted.map((c) => c.summary) }, 400);
     },
     openChat: async (_handle, chat) => {
       const c = chats.find((x) => x.summary.id === chat)!;
@@ -254,6 +283,7 @@ export function mockApi(): Api {
     },
     pickFolder: async () => "/demo/Exports",
     closeArchive: async () => {},
+    about: async () => ({ version: "0.1.0 (mock)", signal: true, third_party: null }),
     log: async () => ["INFO  cv_core: mock backend", "INFO  app: archive opened"],
     getTheme: async () => theme,
     setTheme: async (t) => {
@@ -263,7 +293,7 @@ export function mockApi(): Api {
     pickOutput: async (name, format) => `/demo/${name}.${format === "cva" ? "zip" : format}`,
     blobUrl: (_handle, blob) => {
       const n = Number(blob.split(":")[1] ?? 0);
-      return blob.startsWith("stk:") ? svg(160, 160, (n * 37) % 360, "🙂") : svg(800, 600, (n * 37) % 360, `Photo ${n}`);
+      return blob.startsWith("stk:") ? svg(160, 160, (n * 37) % 360, "sticker") : svg(800, 600, (n * 37) % 360, "photo");
     },
     onDrop: () => () => {},
   };

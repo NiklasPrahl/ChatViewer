@@ -488,3 +488,26 @@ pub fn set_settings(app: AppHandle, settings: Settings) -> CmdResult<()> {
     std::fs::write(path, serde_json::to_vec_pretty(&settings)?)?;
     Ok(())
 }
+
+#[derive(Debug, Serialize)]
+pub struct AboutInfo {
+    pub version: String,
+    /// Whether this build links the AGPL-3.0 Signal importer (ADR 0001).
+    pub signal: bool,
+    /// Bundled third-party notices; absent in development builds.
+    pub third_party: Option<String>,
+}
+
+#[tauri::command]
+pub fn about(app: AppHandle) -> AboutInfo {
+    let third_party = app
+        .path()
+        .resource_dir()
+        .ok()
+        .and_then(|d| std::fs::read_to_string(d.join("THIRD_PARTY_LICENSES.txt")).ok());
+    AboutInfo {
+        version: app.package_info().version.to_string(),
+        signal: cfg!(feature = "signal"),
+        third_party,
+    }
+}

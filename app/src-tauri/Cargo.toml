@@ -1,6 +1,6 @@
 [package]
 name = "chatviewer-app"
-version = "0.0.0"
+version = "0.1.0"
 description = "ChatViewer desktop app (Tauri shell)"
 license.workspace = true
 edition.workspace = true
@@ -19,6 +19,7 @@ cv-cva = { path = "../../crates/cv-cva" }
 cv-export = { path = "../../crates/cv-export" }
 cv-import-signal = { path = "../../crates/cv-import-signal", optional = true }
 cv-import-whatsapp = { path = "../../crates/cv-import-whatsapp" }
+cv-media = { path = "../../crates/cv-media" }
 cv-model = { path = "../../crates/cv-model" }
 log = "0.4"
 percent-encoding = "2"

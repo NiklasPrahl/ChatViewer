@@ -1,0 +1,17 @@
+[package]
+name = "cv-media"
+version = "0.0.0"
+description = "Media helpers: decode Ogg Opus voice notes to WAV for playback"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+ogg = "0.9"
+# libopus (reference decoder, BSD-3-Clause), built from source with cmake.
+opus = "0.4"
+thiserror = "2"
+
+[lints]
+workspace = true

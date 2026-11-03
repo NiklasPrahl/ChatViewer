@@ -1,6 +1,6 @@
 [package]
 name = "cv-cli"
-version = "0.0.0"
+version = "0.1.0"
 description = "chatviewer command-line tool"
 license.workspace = true
 edition.workspace = true
