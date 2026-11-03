@@ -3,8 +3,7 @@
 use std::io::{self, Read};
 
 use aes::Aes256;
-use aes::cipher::generic_array::GenericArray;
-use aes::cipher::{BlockDecryptMut, KeyIvInit, StreamCipher};
+use aes::cipher::{BlockModeDecrypt, KeyIvInit, StreamCipher};
 use hkdf::Hkdf;
 use hmac::Hmac;
 use sha2::Sha256;
@@ -62,7 +61,7 @@ pub fn aes256_cbc_decrypt(key: &[u8; 32], iv: &[u8; 16], ciphertext: &[u8]) -> R
     let mut buf = ciphertext.to_vec();
     let mut dec = Aes256CbcDec::new(key.into(), iv.into());
     for block in buf.as_chunks_mut::<AES_BLOCK>().0 {
-        dec.decrypt_block_mut(GenericArray::from_mut_slice(block));
+        dec.decrypt_block(block.into());
     }
     let len = strip_pkcs7(&buf)?.len();
     buf.truncate(len);
@@ -114,8 +113,7 @@ impl<R: Read> CbcDecryptReader<R> {
             self.out.extend_from_slice(&held);
         }
         for block in self.chunk[..n].as_chunks_mut::<AES_BLOCK>().0 {
-            self.dec
-                .decrypt_block_mut(GenericArray::from_mut_slice(block));
+            self.dec.decrypt_block(block.into());
         }
         self.out.extend_from_slice(&self.chunk[..n]);
 
@@ -172,13 +170,13 @@ fn invalid_data(msg: &'static str) -> io::Error {
 
 #[cfg(test)]
 mod tests {
-    use aes::cipher::BlockEncryptMut;
+    use aes::cipher::BlockModeEncrypt;
     use aes::cipher::block_padding::Pkcs7;
 
     use super::*;
 
     fn encrypt(key: &[u8; 32], iv: &[u8; 16], plain: &[u8]) -> Vec<u8> {
-        cbc::Encryptor::<Aes256>::new(key.into(), iv.into()).encrypt_padded_vec_mut::<Pkcs7>(plain)
+        cbc::Encryptor::<Aes256>::new(key.into(), iv.into()).encrypt_padded_vec::<Pkcs7>(plain)
     }
 
     #[test]

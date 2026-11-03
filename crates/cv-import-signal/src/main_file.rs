@@ -114,7 +114,8 @@ pub fn verify_hmac(path: &Path, key: &MessageBackupKey) -> Result<u64> {
     file.seek(SeekFrom::Start(0))?;
 
     let content_len = len - HMAC_LEN as u64;
-    let mut mac = <HmacSha256 as Mac>::new_from_slice(&*key.hmac_key).expect("any key length");
+    let mut mac =
+        <HmacSha256 as hmac::KeyInit>::new_from_slice(&*key.hmac_key).expect("any key length");
     let mut content = BufReader::with_capacity(256 * 1024, file).take(content_len);
     let mut buf = vec![0u8; 256 * 1024];
     loop {

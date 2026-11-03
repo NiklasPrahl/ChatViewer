@@ -141,7 +141,7 @@ pub fn decrypt_raw(file: &[u8], local_key: &[u8]) -> Result<Vec<u8>> {
     let hmac_key = &local_key[32..];
 
     let (content, mac) = file.split_at(file.len() - HMAC_LEN);
-    let mut hmac = <HmacSha256 as Mac>::new_from_slice(hmac_key).expect("any key length");
+    let mut hmac = <HmacSha256 as hmac::KeyInit>::new_from_slice(hmac_key).expect("any key length");
     hmac.update(content);
     if !macs_equal(&hmac.finalize().into_bytes(), mac) {
         return Err(Error::MediaAuthenticationFailed);
@@ -171,7 +171,7 @@ mod tests {
     fn encrypt(local_key: &[u8; 64], plaintext: &[u8], pad: bool) -> Vec<u8> {
         use aes::Aes256;
         use aes::cipher::block_padding::Pkcs7;
-        use aes::cipher::{BlockEncryptMut, KeyIvInit};
+        use aes::cipher::{BlockModeEncrypt, KeyIvInit};
 
         let mut data = plaintext.to_vec();
         if pad {
@@ -182,9 +182,9 @@ mod tests {
         let mut out = iv.to_vec();
         out.extend(
             cbc::Encryptor::<Aes256>::new(key.into(), &iv.into())
-                .encrypt_padded_vec_mut::<Pkcs7>(&data),
+                .encrypt_padded_vec::<Pkcs7>(&data),
         );
-        let mut mac = <HmacSha256 as Mac>::new_from_slice(&local_key[32..]).unwrap();
+        let mut mac = <HmacSha256 as hmac::KeyInit>::new_from_slice(&local_key[32..]).unwrap();
         mac.update(&out);
         out.extend_from_slice(&mac.finalize().into_bytes());
         out

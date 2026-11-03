@@ -33,7 +33,7 @@ cv-core = { path = "../cv-core" }
 cv-model = { path = "../cv-model" }
 log = "0.4"
 serde_json = "1"
-cbc = { version = "0.1", features = ["std"] }
+cbc = { version = "0.2", features = ["alloc"] }
 ctr = "0.10"
 flate2 = "1"
 hex = "0.4"

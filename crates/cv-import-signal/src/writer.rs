@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 
 use aes::Aes256;
 use aes::cipher::block_padding::Pkcs7;
-use aes::cipher::{BlockEncryptMut, KeyIvInit};
+use aes::cipher::{BlockModeEncrypt, KeyIvInit};
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use hmac::Mac;
@@ -159,11 +159,11 @@ fn encrypt_then_mac(
     let mut iv = [0u8; 16];
     rng.fill_bytes(&mut iv);
     let ciphertext = cbc::Encryptor::<Aes256>::new(aes_key.into(), &iv.into())
-        .encrypt_padded_vec_mut::<Pkcs7>(plaintext);
+        .encrypt_padded_vec::<Pkcs7>(plaintext);
     let mut out = Vec::with_capacity(16 + ciphertext.len() + 32);
     out.extend_from_slice(&iv);
     out.extend_from_slice(&ciphertext);
-    let mut mac = <HmacSha256 as Mac>::new_from_slice(hmac_key).expect("any key length");
+    let mut mac = <HmacSha256 as hmac::KeyInit>::new_from_slice(hmac_key).expect("any key length");
     mac.update(&out);
     out.extend_from_slice(&mac.finalize().into_bytes());
     out
