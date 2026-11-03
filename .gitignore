@@ -38,3 +38,6 @@ ChatStorage.sqlite*
 
 # Local tool configuration
 /.claude/
+
+# Release build inputs (generated)
+/app/src-tauri/binaries/

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
 import { formatDuration, formatSize, segments } from "../format";
 import type { Attachment, Content, Participant, RichText } from "../types";
@@ -66,6 +66,25 @@ function Waveform({ samples }: { samples: number[] }) {
   );
 }
 
+/** Plays natively; if the WebView cannot decode the format (e.g. Ogg
+ * Opus voice notes in WKWebView), asks the backend for a WAV version. */
+function AudioPlayer({ src, mime }: { src: string; mime?: string }) {
+  const [wav, setWav] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const canConvert = !mime || mime.includes("ogg") || mime.includes("opus");
+  const url = wav ? `${src}${src.includes("?") ? "&" : "?"}as=wav` : src;
+  if (failed) return <span className="note">This audio format cannot be played.</span>;
+  return (
+    <audio
+      key={url}
+      src={url}
+      controls
+      preload="metadata"
+      onError={() => (!wav && canConvert ? setWav(true) : setFailed(true))}
+    />
+  );
+}
+
 export function AttachmentView({ a, ctx }: { a: Attachment; ctx: Ctx }) {
   const available = a.availability.status === "available";
   const src = a.availability.status === "available" ? ctx.blobUrl(a.availability.blob, a.mime) : "";
@@ -101,7 +120,7 @@ export function AttachmentView({ a, ctx }: { a: Attachment; ctx: Ctx }) {
       return (
         <div className="audio">
           {a.waveform && a.waveform.length > 0 && <Waveform samples={a.waveform} />}
-          <audio src={src} controls preload="none" />
+          <AudioPlayer src={src} mime={a.mime} />
         </div>
       );
     default:

@@ -1,6 +1,8 @@
-//! `cvblob://localhost/<handle>/<blob>?mime=<type>` serves attachment
-//! bytes from memory, with HTTP Range support for audio/video seeking.
-//! Responses are marked `no-store` so the WebView does not cache them.
+//! `cvblob://localhost/<handle>/<blob>?mime=<type>[&as=wav]` serves
+//! attachment bytes from memory, with HTTP Range support for audio/video
+//! seeking. `as=wav` decodes Ogg Opus voice notes for WebViews that cannot
+//! play them. Responses are marked `no-store` so the WebView does not
+//! cache them.
 
 use std::io::Read;
 use std::sync::Arc;
@@ -12,20 +14,34 @@ use crate::state::AppState;
 
 pub const SCHEME: &str = "cvblob";
 
-/// Parses `/<handle>/<percent-encoded blob ref>` and the `mime` query.
-pub fn parse_path(path: &str, query: Option<&str>) -> Option<(u32, String, Option<String>)> {
+#[derive(Debug, PartialEq, Eq)]
+pub struct BlobRequest {
+    pub handle: u32,
+    pub blob: String,
+    pub mime: Option<String>,
+    /// Decode Ogg Opus to WAV.
+    pub as_wav: bool,
+}
+
+/// Parses `/<handle>/<percent-encoded blob ref>` and the query.
+pub fn parse_path(path: &str, query: Option<&str>) -> Option<BlobRequest> {
     let rest = path.strip_prefix('/')?;
     let (handle, blob) = rest.split_once('/')?;
     let handle = handle.parse().ok()?;
     let blob = percent_decode_str(blob).decode_utf8().ok()?.into_owned();
-    let mime = query.and_then(|q| {
-        q.split('&')
-            .find_map(|kv| kv.strip_prefix("mime="))
-            .and_then(|m| percent_decode_str(m).decode_utf8().ok())
-            .map(|m| m.into_owned())
-            .filter(|m| m.chars().all(|c| c.is_ascii_graphic()))
-    });
-    Some((handle, blob, mime))
+    let params: Vec<&str> = query.map(|q| q.split('&').collect()).unwrap_or_default();
+    let mime = params
+        .iter()
+        .find_map(|kv| kv.strip_prefix("mime="))
+        .and_then(|m| percent_decode_str(m).decode_utf8().ok())
+        .map(|m| m.into_owned())
+        .filter(|m| m.chars().all(|c| c.is_ascii_graphic()));
+    Some(BlobRequest {
+        handle,
+        blob,
+        mime,
+        as_wav: params.contains(&"as=wav"),
+    })
 }
 
 /// Parses a single `bytes=start-end` range for a body of `len` bytes.
@@ -50,7 +66,13 @@ fn error(status: StatusCode) -> Response<Vec<u8>> {
 
 pub fn handle(state: &AppState, request: &Request<Vec<u8>>) -> Response<Vec<u8>> {
     let uri = request.uri();
-    let Some((handle, blob, mime)) = parse_path(uri.path(), uri.query()) else {
+    let Some(BlobRequest {
+        handle,
+        blob,
+        mut mime,
+        as_wav,
+    }) = parse_path(uri.path(), uri.query())
+    else {
         return error(StatusCode::BAD_REQUEST);
     };
     let key = format!("{handle}/{blob}");
@@ -77,9 +99,36 @@ pub fn handle(state: &AppState, request: &Request<Vec<u8>>) -> Response<Vec<u8>>
                 .blobs
                 .lock()
                 .expect("blob lock")
-                .put(key, data.clone());
+                .put(key.clone(), data.clone());
             data
         }
+    };
+
+    let data = if as_wav {
+        let wav_key = format!("{key}#wav");
+        let cached = state.blobs.lock().expect("blob lock").get(&wav_key);
+        let wav = match cached {
+            Some(wav) => wav,
+            None => match cv_media::opus_to_wav(&data) {
+                Ok(wav) => {
+                    let wav = Arc::new(wav);
+                    state
+                        .blobs
+                        .lock()
+                        .expect("blob lock")
+                        .put(wav_key, wav.clone());
+                    wav
+                }
+                Err(e) => {
+                    log::warn!("app: audio could not be converted: {e}");
+                    return error(StatusCode::UNSUPPORTED_MEDIA_TYPE);
+                }
+            },
+        };
+        mime = Some("audio/wav".into());
+        wav
+    } else {
+        data
     };
 
     let mut response = Response::builder()
@@ -115,14 +164,27 @@ mod tests {
     fn parses_blob_paths() {
         assert_eq!(
             parse_path("/3/signal%3Aabc", Some("mime=image%2Fjpeg")),
-            Some((3, "signal:abc".into(), Some("image/jpeg".into())))
+            Some(BlobRequest {
+                handle: 3,
+                blob: "signal:abc".into(),
+                mime: Some("image/jpeg".into()),
+                as_wav: false,
+            })
         );
+        let r = parse_path(
+            "/1/media%2F000001-0-a%20b.opus",
+            Some("mime=audio%2Fogg&as=wav"),
+        )
+        .unwrap();
         assert_eq!(
-            parse_path("/1/media%2F000001-0-a%20b.jpg", None),
-            Some((1, "media/000001-0-a b.jpg".into(), None))
+            (r.handle, r.blob.as_str(), r.as_wav),
+            (1, "media/000001-0-a b.opus", true)
         );
         assert_eq!(parse_path("/x/abc", None), None);
-        assert_eq!(parse_path("/1/a", Some("mime=bad%0Atype")).unwrap().2, None);
+        assert_eq!(
+            parse_path("/1/a", Some("mime=bad%0Atype")).unwrap().mime,
+            None
+        );
     }
 
     #[test]

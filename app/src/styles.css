@@ -235,7 +235,8 @@ button.link { background: none; border: none; padding: 0; color: var(--accent); 
 @media (max-width: 720px) { .export-pick { grid-template-columns: 1fr; } }
 .export-chats { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 .export-toolbar { display: flex; gap: 6px; align-items: center; padding-right: 8px; }
-.export-toolbar .search { flex: 1; margin: 8px; }
+.export-toolbar .search { flex: 1; min-width: 0; margin: 8px; }
+.export-toolbar button { flex-shrink: 0; }
 .export-list { max-height: 320px; overflow-y: auto; border-top: 1px solid var(--border); }
 .export-item { display: flex; gap: 10px; align-items: center; padding: 6px 10px; cursor: pointer; }
 .export-item:hover { background: var(--panel-2); }
@@ -244,3 +245,4 @@ button.link { background: none; border: none; padding: 0; color: var(--accent); 
 .progress span { position: relative; }
 .selection-note { margin: 12px 0 0; }
 .buttons button, .export-toolbar button { white-space: nowrap; }
+.licenses { max-height: 40vh; overflow: auto; font-size: 11px; background: var(--panel-2); padding: 10px; border-radius: 8px; white-space: pre-wrap; }

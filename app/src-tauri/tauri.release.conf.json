@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "externalBin": ["binaries/chatviewer"],
+    "resources": {
+      "../../LICENSE": "LICENSE",
+      "../../LICENSES/AGPL-3.0-only.txt": "LICENSES/AGPL-3.0-only.txt",
+      "../../target/licenses/THIRD_PARTY_LICENSES.txt": "THIRD_PARTY_LICENSES.txt"
+    },
+    "copyright": "Copyright (c) 2026 ChatViewer contributors",
+    "category": "Utility",
+    "shortDescription": "Offline viewer for exported WhatsApp and Signal chats",
+    "longDescription": "Opens WhatsApp chat exports and Signal on-device backups, shows them like a messenger, and exports chats to text, Markdown, JSON or self-contained ZIP archives. Offline only; nothing is stored.",
+    "linux": {
+      "deb": { "depends": [] }
+    }
+  }
+}

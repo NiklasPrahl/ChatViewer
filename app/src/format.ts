@@ -1,5 +1,10 @@
 import type { RichText, TextStyle, Timestamp } from "./types";
 
+/** Display locale: the system's, or `?lang=…` (used for documentation
+ * screenshots). */
+export const LOCALE: string | undefined =
+  new URLSearchParams(globalThis.location?.search ?? "").get("lang") ?? undefined;
+
 /** A Date for display. Naive local times are shown as written. */
 export function toDate(t: Timestamp): Date {
   if (t.kind === "utc_millis") return new Date(t.value);
@@ -11,7 +16,7 @@ export function toDate(t: Timestamp): Date {
 }
 
 export function formatTime(t: Timestamp): string {
-  return toDate(t).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return toDate(t).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
 }
 
 export function dayKey(t: Timestamp): string {
@@ -20,13 +25,13 @@ export function dayKey(t: Timestamp): string {
 }
 
 export function formatDay(t: Timestamp): string {
-  return toDate(t).toLocaleDateString(undefined, {
+  return toDate(t).toLocaleDateString(LOCALE, {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 }
 
 export function formatShortDate(t: Timestamp | undefined): string {
-  return t ? toDate(t).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
+  return t ? toDate(t).toLocaleDateString(LOCALE, { year: "numeric", month: "short", day: "numeric" }) : "";
 }
 
 export function formatSize(bytes: number | undefined): string {
